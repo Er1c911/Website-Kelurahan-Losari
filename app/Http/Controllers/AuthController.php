@@ -4,13 +4,18 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Throwable;
 
 class AuthController extends Controller
 {
     public function showLogin()
     {
-        if (Auth::check()) {
-            return redirect()->route('dashboard');
+        try {
+            if (Auth::check()) {
+                return redirect()->route('dashboard');
+            }
+        } catch (Throwable) {
+            // Keep login page accessible even when auth/session backend is temporarily unavailable.
         }
 
         return view('auth.login');
