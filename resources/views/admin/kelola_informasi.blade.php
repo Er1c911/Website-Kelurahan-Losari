@@ -91,7 +91,7 @@
                             @if ($item->image_path)
                                 <div>
                                     <p class="text-sm font-semibold mb-2">Gambar Saat Ini</p>
-                                    <img src="{{ asset('storage/' . $item->image_path) }}" alt="{{ $item->title }}" class="w-full max-w-md rounded-lg border border-gray-200">
+                                    <img src="{{ \Illuminate\Support\Facades\Storage::disk(config('filesystems.media', 'public'))->url($item->image_path) }}" alt="{{ $item->title }}" class="w-full max-w-md rounded-lg border border-gray-200">
                                 </div>
                             @endif
 

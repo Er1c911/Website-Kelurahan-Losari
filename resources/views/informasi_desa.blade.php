@@ -95,7 +95,7 @@
                     <div class="flex flex-col lg:flex-row min-h-[320px]">
                         @if (!empty($section->image_path))
                             <div class="w-full lg:w-2/5 min-h-[240px] lg:min-h-[320px] overflow-hidden bg-slate-100">
-                                <img src="{{ asset('storage/' . $section->image_path) }}" alt="{{ $section->title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                                <img src="{{ \Illuminate\Support\Facades\Storage::disk(config('filesystems.media', 'public'))->url($section->image_path) }}" alt="{{ $section->title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                             </div>
                         @endif
 

@@ -70,7 +70,7 @@
                     @if ($videoPath)
                         <div class="mt-4 overflow-hidden rounded-2xl bg-black shadow-lg">
                             <video class="w-full aspect-video object-cover block" controls preload="metadata">
-                                <source src="{{ asset('storage/'.$videoPath) }}">
+                                <source src="{{ \Illuminate\Support\Facades\Storage::disk(config('filesystems.media', 'public'))->url($videoPath) }}">
                                 Browser Anda tidak mendukung pemutaran video.
                             </video>
                         </div>

@@ -7,6 +7,11 @@ use Illuminate\Support\Facades\Storage;
 
 class KelolaInformasiController extends Controller
 {
+    private function mediaDisk(): string
+    {
+        return (string) config('filesystems.media', 'public');
+    }
+
     public function index()
     {
         return view('welcome_user', [
@@ -35,8 +40,8 @@ class KelolaInformasiController extends Controller
         foreach (['mp4', 'webm', 'ogg', 'mov'] as $extension) {
             $path = 'beranda/video-profil-desa.'.$extension;
 
-            if (Storage::disk('public')->exists($path)) {
-                return Storage::url($path);
+            if (Storage::disk($this->mediaDisk())->exists($path)) {
+                return Storage::disk($this->mediaDisk())->url($path);
             }
         }
 

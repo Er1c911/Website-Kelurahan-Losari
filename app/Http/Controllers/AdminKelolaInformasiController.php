@@ -14,6 +14,11 @@ class AdminKelolaInformasiController extends Controller
 
     private const BERANDA_VIDEO_BASENAME = 'video-profil-desa';
 
+    private function mediaDisk(): string
+    {
+        return (string) config('filesystems.media', 'public');
+    }
+
     public function index()
     {
         return view('admin.dashboard', [
@@ -65,14 +70,14 @@ class AdminKelolaInformasiController extends Controller
 
         $currentVideoPath = $this->getBerandaVideoPath();
         if ($currentVideoPath !== null) {
-            Storage::disk('public')->delete($currentVideoPath);
+            Storage::disk($this->mediaDisk())->delete($currentVideoPath);
         }
 
         $extension = $validated['video']->getClientOriginalExtension() ?: $validated['video']->extension();
         $path = $validated['video']->storeAs(
             self::BERANDA_VIDEO_DIRECTORY,
             self::BERANDA_VIDEO_BASENAME.'.'.$extension,
-            'public'
+            $this->mediaDisk()
         );
 
         return back()->with([
@@ -89,7 +94,7 @@ class AdminKelolaInformasiController extends Controller
             return back()->with('status', 'Video beranda kustom tidak ditemukan.');
         }
 
-        Storage::disk('public')->delete($currentVideoPath);
+        Storage::disk($this->mediaDisk())->delete($currentVideoPath);
 
         return back()->with('status', 'Video beranda berhasil dihapus. Halaman publik kembali memakai video bawaan.');
     }
@@ -146,7 +151,7 @@ class AdminKelolaInformasiController extends Controller
         ];
 
         if ($request->hasFile('image')) {
-            $data['image_path'] = $request->file('image')->store('kelola_informasi', 'public');
+            $data['image_path'] = $request->file('image')->store('kelola_informasi', $this->mediaDisk());
         }
 
         KelolaInformasi::create($data);
@@ -167,10 +172,10 @@ class AdminKelolaInformasiController extends Controller
 
         if ($request->hasFile('image')) {
             if (!empty($informasi->image_path)) {
-                Storage::disk('public')->delete($informasi->image_path);
+                Storage::disk($this->mediaDisk())->delete($informasi->image_path);
             }
 
-            $path = $request->file('image')->store('kelola_informasi', 'public');
+            $path = $request->file('image')->store('kelola_informasi', $this->mediaDisk());
             $informasi->image_path = $path;
         }
 
@@ -182,7 +187,7 @@ class AdminKelolaInformasiController extends Controller
     public function destroy(KelolaInformasi $informasi)
     {
         if (!empty($informasi->image_path)) {
-            Storage::disk('public')->delete($informasi->image_path);
+            Storage::disk($this->mediaDisk())->delete($informasi->image_path);
         }
 
         $informasi->delete();
@@ -195,7 +200,7 @@ class AdminKelolaInformasiController extends Controller
         foreach (['mp4', 'webm', 'ogg', 'mov'] as $extension) {
             $path = self::BERANDA_VIDEO_DIRECTORY.'/'.self::BERANDA_VIDEO_BASENAME.'.'.$extension;
 
-            if (Storage::disk('public')->exists($path)) {
+            if (Storage::disk($this->mediaDisk())->exists($path)) {
                 return $path;
             }
         }
