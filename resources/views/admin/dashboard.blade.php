@@ -8,16 +8,16 @@
 </head>
 <body class="bg-gray-100 text-gray-800">
 
-<div class="flex h-screen overflow-hidden">
+<div class="min-h-screen">
 
 
     <main class="flex-1 overflow-y-auto bg-gray-50">
         <header class="bg-blue-900 border-b border-blue-800 py-4 px-4 md:px-8 flex flex-col md:flex-row md:items-center gap-3 md:gap-0 md:justify-between">
-            <h1 class="text-xl md:text-2xl font-bold text-white">{{ $header ?? 'Halaman Admin Website Kelurahan Losari' }}</h1>
-            <div class="flex items-center gap-3">
+            <h1 class="text-lg sm:text-xl md:text-2xl font-bold text-white leading-tight">{{ $header ?? 'Halaman Admin Website Kelurahan Losari' }}</h1>
+            <div class="flex flex-wrap items-center gap-3">
                 <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                <span class="text-sm font-medium text-blue-100">Sesi Aktif: <strong class="text-white">{{ Auth::user()->name }}</strong></span>
-                <form action="{{ route('logout') }}" method="POST" class="ml-1">
+                <span class="text-xs sm:text-sm font-medium text-blue-100">Sesi Aktif: <strong class="text-white">{{ Auth::user()->name }}</strong></span>
+                <form action="{{ route('logout') }}" method="POST" class="sm:ml-1">
                     @csrf
                     <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm font-semibold px-3 py-2 transition">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4" aria-hidden="true">
@@ -32,14 +32,12 @@
         <div class="p-4 md:p-8 max-w-7xl mx-auto">
             {{-- Konten dashboard --}}
 
-            <div class="flex items-center justify-start gap-4 mb-6">
-                <div>
-                    <h2 class="sr-only">Kelola Informasi Desa</h2>
-                </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-6">
+                <h2 class="sr-only">Menu Pengelolaan Admin</h2>
 
 
                 <a href="{{ route('admin.kelola-informasi.manage') }}"
-                   class="inline-flex items-center gap-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xl px-8 py-4 rounded-2xl shadow-lg hover:shadow-xl ring-1 ring-orange-300/60 transition-all duration-300 text-left">
+                         class="inline-flex w-full items-center gap-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-base sm:text-lg px-4 sm:px-6 py-4 rounded-2xl shadow-lg hover:shadow-xl ring-1 ring-orange-300/60 transition-all duration-300 text-left">
                     <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/20" aria-hidden="true">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-5 w-5 text-white">
                             <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12ZM12 6.75a.75.75 0 0 1 .75.75v.008a.75.75 0 0 1-1.5 0V7.5a.75.75 0 0 1 .75-.75Zm0 4.5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0V12a.75.75 0 0 1 .75-.75Z" clip-rule="evenodd" />
@@ -49,7 +47,7 @@
                 </a>
 
                 <a href="{{ route('admin.kelola-kalender.manage') }}"
-                   class="inline-flex items-center gap-3 bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-700 hover:to-sky-600 text-white font-bold text-xl px-8 py-4 rounded-2xl shadow-lg hover:shadow-xl ring-1 ring-blue-300/60 transition-all duration-300 text-left">
+                         class="inline-flex w-full items-center gap-3 bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-700 hover:to-sky-600 text-white font-bold text-base sm:text-lg px-4 sm:px-6 py-4 rounded-2xl shadow-lg hover:shadow-xl ring-1 ring-blue-300/60 transition-all duration-300 text-left">
                     <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/20" aria-hidden="true">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-5 w-5 text-white">
                             <path d="M6.75 2.25A.75.75 0 0 0 6 3v1.5H4.5A2.25 2.25 0 0 0 2.25 6.75v12A2.25 2.25 0 0 0 4.5 21h15a2.25 2.25 0 0 0 2.25-2.25v-12A2.25 2.25 0 0 0 19.5 4.5H18V3a.75.75 0 0 0-1.5 0v1.5h-9V3a.75.75 0 0 0-.75-.75Z" />
@@ -60,7 +58,7 @@
                 </a>
 
                 <a href="{{ route('admin.kelola-beranda.manage') }}"
-                   class="inline-flex items-center gap-3 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white font-bold text-xl px-8 py-4 rounded-2xl shadow-lg hover:shadow-xl ring-1 ring-emerald-300/60 transition-all duration-300 text-left">
+                         class="inline-flex w-full items-center gap-3 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white font-bold text-base sm:text-lg px-4 sm:px-6 py-4 rounded-2xl shadow-lg hover:shadow-xl ring-1 ring-emerald-300/60 transition-all duration-300 text-left">
                     <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/20" aria-hidden="true">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-5 w-5 text-white">
                             <path d="M12 3.75a.75.75 0 0 1 .53.22l8.25 8.25a.75.75 0 1 1-1.06 1.06l-.97-.97V19.5A2.25 2.25 0 0 1 16.5 21.75h-9A2.25 2.25 0 0 1 5.25 19.5v-7.19l-.97.97a.75.75 0 0 1-1.06-1.06l8.25-8.25a.75.75 0 0 1 .53-.22Z" />
