@@ -80,6 +80,12 @@ class AdminKelolaInformasiController extends Controller
             $this->mediaDisk()
         );
 
+        if (! is_string($path) || $path === '') {
+            return back()->withErrors([
+                'video' => 'Gagal menyimpan video. Silakan coba lagi.',
+            ]);
+        }
+
         return back()->with([
             'status' => 'Video beranda berhasil diperbarui.',
             'videoPath' => $path,
@@ -151,7 +157,15 @@ class AdminKelolaInformasiController extends Controller
         ];
 
         if ($request->hasFile('image')) {
-            $data['image_path'] = $request->file('image')->store('kelola_informasi', $this->mediaDisk());
+            $storedPath = $request->file('image')->store('kelola_informasi', $this->mediaDisk());
+
+            if (! is_string($storedPath) || $storedPath === '') {
+                return back()->withErrors([
+                    'image' => 'Gagal menyimpan gambar. Silakan coba lagi.',
+                ])->withInput();
+            }
+
+            $data['image_path'] = $storedPath;
         }
 
         KelolaInformasi::create($data);
@@ -176,6 +190,13 @@ class AdminKelolaInformasiController extends Controller
             }
 
             $path = $request->file('image')->store('kelola_informasi', $this->mediaDisk());
+
+            if (! is_string($path) || $path === '') {
+                return back()->withErrors([
+                    'image' => 'Gagal menyimpan gambar. Silakan coba lagi.',
+                ])->withInput();
+            }
+
             $informasi->image_path = $path;
         }
 

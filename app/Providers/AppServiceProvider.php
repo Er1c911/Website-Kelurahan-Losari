@@ -31,14 +31,19 @@ class AppServiceProvider extends ServiceProvider
             $tmpFramework = '/tmp/framework';
             $tmpViews = $tmpFramework.'/views';
             $tmpCache = $tmpFramework.'/cache';
+            $tmpStoragePublic = '/tmp/storage/app/public';
 
             File::ensureDirectoryExists($tmpViews);
             File::ensureDirectoryExists($tmpCache);
+            File::ensureDirectoryExists($tmpStoragePublic);
 
             config([
                 'view.compiled' => $tmpViews,
                 'cache.stores.file.path' => $tmpCache,
                 'cache.stores.file.lock_path' => $tmpCache,
+                'filesystems.disks.public.root' => $tmpStoragePublic,
+                'filesystems.disks.public.url' => rtrim((string) config('app.url'), '/').'/storage',
+                'filesystems.media' => 'public',
             ]);
 
             try {
