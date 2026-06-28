@@ -13,6 +13,7 @@ class KelolaInformasi extends Model
         'title',
         'description',
         'image_path',
+        'image_data',
     ];
 }
 

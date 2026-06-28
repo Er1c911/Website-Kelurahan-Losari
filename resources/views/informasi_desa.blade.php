@@ -57,7 +57,7 @@
     <nav class="bg-white/90 backdrop-blur-md shadow-md sticky top-0 z-50 border-b border-white/60">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
             <a href="{{ route('home') }}" class="flex items-center gap-3 text-xl sm:text-2xl font-bold text-orange-600 hover:opacity-90 transition">
-                <img src="{{ asset('logo_losari.png') }}" alt="Logo Losari" class="h-9 sm:h-10 w-auto object-contain">
+                <img src="{{ route('public.asset', ['path' => 'logo_losari.png']) }}" alt="Logo Losari" class="h-9 sm:h-10 w-auto object-contain">
                 <span>Website Kelurahan Losari</span>
             </a>
 
@@ -93,9 +93,9 @@
                 <article class="card-reveal group relative bg-slate-50 rounded-3xl shadow-[0_12px_40px_rgba(15,47,95,0.12)] hover:shadow-[0_20px_50px_rgba(15,47,95,0.18)] transition-all duration-300 overflow-hidden border border-slate-200/70">
                     <div class="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-orange-400 via-amber-400 to-orange-500"></div>
                     <div class="flex flex-col lg:flex-row min-h-[320px]">
-                        @if (!empty($section->image_path))
+                        @if (!empty($section->image_data) || !empty($section->image_path))
                             <div class="w-full lg:w-2/5 min-h-[240px] lg:min-h-[320px] overflow-hidden bg-slate-100">
-                                <img src="{{ \Illuminate\Support\Facades\Storage::disk(config('filesystems.media', 'public'))->url($section->image_path) }}" alt="{{ $section->title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                                <img src="{{ $section->image_data ?: \Illuminate\Support\Facades\Storage::disk(config('filesystems.media', 'public'))->url($section->image_path) }}" alt="{{ $section->title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                             </div>
                         @endif
 

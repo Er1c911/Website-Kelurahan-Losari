@@ -45,7 +45,7 @@ class KelolaInformasiController extends Controller
             }
         }
 
-        return asset('video_profil_desa.mp4');
+        return route('public.asset', ['path' => 'video_profil_desa.mp4']);
     }
 
 }

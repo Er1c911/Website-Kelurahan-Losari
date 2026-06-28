@@ -50,6 +50,7 @@ class AppServiceProvider extends ServiceProvider
                 $schemaIncomplete = ! Schema::hasTable('users')
                     || ! Schema::hasTable('kelola_informasi')
                     || ! Schema::hasTable('agenda_kalender')
+                    || (Schema::hasTable('kelola_informasi') && ! Schema::hasColumn('kelola_informasi', 'image_data'))
                     || (Schema::hasTable('agenda_kalender')
                         && (! Schema::hasColumn('agenda_kalender', 'start_time') || ! Schema::hasColumn('agenda_kalender', 'end_time')));
 

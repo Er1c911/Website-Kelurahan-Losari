@@ -5,6 +5,19 @@ use App\Http\Controllers\AuthController;
 use App\Models\AgendaKalender;
 use Illuminate\Support\Facades\Storage;
 
+Route::get('/assets/{path}', function (string $path) {
+    if (!preg_match('/^[A-Za-z0-9_\/.\-]+$/', $path)) {
+        abort(404);
+    }
+
+    $fullPath = public_path($path);
+    if (!is_file($fullPath)) {
+        abort(404);
+    }
+
+    return response()->file($fullPath);
+})->where('path', '.*')->name('public.asset');
+
 Route::get('/storage/{path}', function (string $path) {
     $disk = config('filesystems.media', 'public');
 

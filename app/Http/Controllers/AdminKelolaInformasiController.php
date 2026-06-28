@@ -157,15 +157,14 @@ class AdminKelolaInformasiController extends Controller
         ];
 
         if ($request->hasFile('image')) {
-            $storedPath = $request->file('image')->store('kelola_informasi', $this->mediaDisk());
+            $imageFile = $request->file('image');
+            $mimeType = $imageFile->getMimeType() ?: 'application/octet-stream';
+            $data['image_data'] = 'data:'.$mimeType.';base64,'.base64_encode((string) $imageFile->get());
 
-            if (! is_string($storedPath) || $storedPath === '') {
-                return back()->withErrors([
-                    'image' => 'Gagal menyimpan gambar. Silakan coba lagi.',
-                ])->withInput();
+            $storedPath = $imageFile->store('kelola_informasi', $this->mediaDisk());
+            if (is_string($storedPath) && $storedPath !== '') {
+                $data['image_path'] = $storedPath;
             }
-
-            $data['image_path'] = $storedPath;
         }
 
         KelolaInformasi::create($data);
@@ -189,15 +188,14 @@ class AdminKelolaInformasiController extends Controller
                 Storage::disk($this->mediaDisk())->delete($informasi->image_path);
             }
 
-            $path = $request->file('image')->store('kelola_informasi', $this->mediaDisk());
+            $imageFile = $request->file('image');
+            $mimeType = $imageFile->getMimeType() ?: 'application/octet-stream';
+            $informasi->image_data = 'data:'.$mimeType.';base64,'.base64_encode((string) $imageFile->get());
 
-            if (! is_string($path) || $path === '') {
-                return back()->withErrors([
-                    'image' => 'Gagal menyimpan gambar. Silakan coba lagi.',
-                ])->withInput();
+            $path = $imageFile->store('kelola_informasi', $this->mediaDisk());
+            if (is_string($path) && $path !== '') {
+                $informasi->image_path = $path;
             }
-
-            $informasi->image_path = $path;
         }
 
         $informasi->save();
