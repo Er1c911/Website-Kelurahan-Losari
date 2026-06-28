@@ -33,7 +33,7 @@ Route::get('/', [\App\Http\Controllers\KelolaInformasiController::class, 'index'
 Route::get('/informasi-desa', [\App\Http\Controllers\KelolaInformasiController::class, 'informasiDesa'])
     ->name('informasi-desa');
 Route::view('/kalender-desa', 'kalender_desa')->name('kalender-desa');
-Route::get('/api/kalender-desa', function (\Illuminate\Http\Request $request) {
+Route::get('/kalender-desa/data', function (\Illuminate\Http\Request $request) {
     $now = now(config('app.timezone'));
 
     $year = (int) $request->query('year', $now->year);
