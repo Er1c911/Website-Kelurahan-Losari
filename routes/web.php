@@ -5,17 +5,15 @@ use App\Http\Controllers\AuthController;
 use App\Models\AgendaKalender;
 use Illuminate\Support\Facades\Storage;
 
-if (env('VERCEL')) {
-    Route::get('/storage/{path}', function (string $path) {
-        $disk = config('filesystems.media', 'public');
+Route::get('/storage/{path}', function (string $path) {
+    $disk = config('filesystems.media', 'public');
 
-        if (! Storage::disk($disk)->exists($path)) {
-            abort(404);
-        }
+    if (! Storage::disk($disk)->exists($path)) {
+        abort(404);
+    }
 
-        return response()->file(Storage::disk($disk)->path($path));
-    })->where('path', '.*');
-}
+    return response()->file(Storage::disk($disk)->path($path));
+})->where('path', '.*');
 
 // Halaman Publik (User biasa tanpa login)
 Route::get('/', [\App\Http\Controllers\KelolaInformasiController::class, 'index'])->name('home');

@@ -42,7 +42,7 @@ class AppServiceProvider extends ServiceProvider
                 'cache.stores.file.path' => $tmpCache,
                 'cache.stores.file.lock_path' => $tmpCache,
                 'filesystems.disks.public.root' => $tmpStoragePublic,
-                'filesystems.disks.public.url' => rtrim((string) config('app.url'), '/').'/storage',
+                'filesystems.disks.public.url' => '/storage',
                 'filesystems.media' => 'public',
             ]);
 
