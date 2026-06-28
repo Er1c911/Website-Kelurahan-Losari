@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -21,6 +22,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         if (env('VERCEL')) {
+            URL::forceScheme('https');
+
             $tmpFramework = '/tmp/framework';
             $tmpViews = $tmpFramework.'/views';
             $tmpCache = $tmpFramework.'/cache';
