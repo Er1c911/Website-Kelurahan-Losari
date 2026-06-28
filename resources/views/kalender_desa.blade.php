@@ -73,7 +73,7 @@
     <nav class="bg-white/90 backdrop-blur-md shadow-md sticky top-0 z-50 border-b border-white/60">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
             <a href="{{ route('home') }}" class="flex items-center gap-3 text-xl sm:text-2xl font-bold text-orange-600 hover:opacity-90 transition">
-                <img src="{{ asset('logo_losari.png') }}" alt="Logo Losari" class="h-9 sm:h-10 w-auto object-contain">
+                <img src="{{ route('public.asset', ['path' => 'logo_losari.png']) }}" alt="Logo Losari" class="h-9 sm:h-10 w-auto object-contain">
                 <span>Website Kelurahan Losari</span>
             </a>
 
