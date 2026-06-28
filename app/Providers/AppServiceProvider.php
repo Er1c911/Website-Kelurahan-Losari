@@ -2,9 +2,13 @@
 
 namespace App\Providers;
 
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
+use Throwable;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -36,6 +40,22 @@ class AppServiceProvider extends ServiceProvider
                 'cache.stores.file.path' => $tmpCache,
                 'cache.stores.file.lock_path' => $tmpCache,
             ]);
+
+            try {
+                $schemaIncomplete = ! Schema::hasTable('users')
+                    || ! Schema::hasTable('kelola_informasi')
+                    || ! Schema::hasTable('agenda_kalender')
+                    || (Schema::hasTable('agenda_kalender')
+                        && (! Schema::hasColumn('agenda_kalender', 'start_time') || ! Schema::hasColumn('agenda_kalender', 'end_time')));
+
+                if ($schemaIncomplete) {
+                    Artisan::call('migrate', ['--force' => true]);
+                }
+            } catch (Throwable $exception) {
+                Log::error('Automatic migrate check failed on Vercel.', [
+                    'message' => $exception->getMessage(),
+                ]);
+            }
         }
     }
 }
