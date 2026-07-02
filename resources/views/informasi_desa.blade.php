@@ -100,7 +100,6 @@
                         @endif
 
                         <div class="p-7 sm:p-9 lg:w-3/5 flex flex-col justify-start">
-                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700/80 mb-3">Informasi Resmi</p>
                             <h2 class="title-strong text-2xl sm:text-3xl font-extrabold mb-4 leading-tight">{{ $section->title }}</h2>
                             <p class="text-gray-600 leading-relaxed text-sm sm:text-base">
                                 {{ $section->description }}
