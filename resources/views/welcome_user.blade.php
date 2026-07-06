@@ -53,7 +53,7 @@
     <header id="beranda" class="relative text-white py-12 sm:py-16 md:py-20 px-4 sm:px-6 text-center">
         <div class="w-full mx-auto">
             <h1 class="text-3xl sm:text-5xl font-extrabold mb-3 leading-tight max-w-4xl mx-auto">Selamat Datang di Kelurahan Losari</h1>
-            <p class="text-base sm:text-xl text-blue-200 mb-10 max-w-2xl mx-auto">Selamat datang di Website Resmi Kelurahan Losari, pusat informasi mengenai profil kelurahan, layanan publik, berita, dan potensi wilayah.</p>
+            <p class="text-base sm:text-xl text-blue-200 mb-10 max-w-2xl mx-auto">Pusat informasi resmi profil, layanan publik, berita, dan potensi Kelurahan Losari.</p>
 
             <div class="w-full max-w-5xl mx-auto mb-12 px-2 sm:px-4"> 
                 <div class="relative w-full overflow-hidden rounded-3xl border-4 border-white/10 shadow-2xl bg-black">
