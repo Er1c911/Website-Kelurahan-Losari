@@ -82,7 +82,7 @@
         <div class="relative max-w-4xl mx-auto">
             <h1 class="text-3xl sm:text-5xl font-extrabold leading-tight text-white">Informasi Kelurahan Losari</h1>
             <p class="text-blue-100 mt-4 text-sm sm:text-base">
-                Ringkasan profil, layanan, kegiatan, dan pembaruan wilayah yang disusun agar mudah dipahami seluruh warga.
+                Akses mudah informasi profil, layanan publik, kegiatan, dan pembaruan terkini Kelurahan Losari.
             </p>
         </div>
     </header>
