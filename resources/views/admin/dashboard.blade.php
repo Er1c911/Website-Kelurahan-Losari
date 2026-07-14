@@ -67,6 +67,17 @@
                     <span>Kelola Halaman Beranda</span>
                 </a>
 
+                <a href="{{ route('admin.kelola-umkm.manage') }}"
+                         class="inline-flex w-full items-center gap-3 bg-gradient-to-r from-indigo-600 to-violet-500 hover:from-indigo-700 hover:to-violet-600 text-white font-bold text-base sm:text-lg px-4 sm:px-6 py-4 rounded-2xl shadow-lg hover:shadow-xl ring-1 ring-indigo-300/60 transition-all duration-300 text-left">
+                    <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/20" aria-hidden="true">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-5 w-5 text-white">
+                            <path d="M12 2.25a4.5 4.5 0 0 0-4.5 4.5v1.5h9v-1.5A4.5 4.5 0 0 0 12 2.25Z" />
+                            <path fill-rule="evenodd" d="M5.25 9.75a2.25 2.25 0 0 0-2.25 2.25v5.25A4.5 4.5 0 0 0 7.5 21.75h9a4.5 4.5 0 0 0 4.5-4.5V12a2.25 2.25 0 0 0-2.25-2.25h-13.5Zm3.75 3a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1-.75-.75Z" clip-rule="evenodd" />
+                        </svg>
+                    </span>
+                    <span>Kelola UMKM</span>
+                </a>
+
 
             </div>
 

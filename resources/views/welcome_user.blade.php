@@ -44,6 +44,7 @@
                 <div class="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-xl shadow-lg p-2">
                     <a href="{{ route('home') }}" class="block px-3 py-2 rounded-lg text-gray-700 hover:bg-orange-50 hover:text-orange-700 transition">Beranda</a>
                     <a href="{{ route('informasi-desa') }}" class="block px-3 py-2 rounded-lg text-gray-700 hover:bg-orange-50 hover:text-orange-700 transition">Informasi Desa</a>
+                    <a href="{{ route('umkm') }}" class="block px-3 py-2 rounded-lg text-gray-700 hover:bg-orange-50 hover:text-orange-700 transition">UMKM</a>
                     <a href="{{ route('kalender-desa') }}" class="block px-3 py-2 rounded-lg text-gray-700 hover:bg-orange-50 hover:text-orange-700 transition">Kalender Kelurahan Losari</a>
                 </div>
             </details>

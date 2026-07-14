@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AgendaKalender;
 use App\Models\KelolaInformasi;
+use App\Models\Umkm;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -54,6 +55,17 @@ class AdminKelolaInformasiController extends Controller
     {
         return view('admin.kelola_beranda', [
             'videoPath' => $this->getBerandaVideoPath(),
+        ]);
+    }
+
+    public function manageUmkm()
+    {
+        $umkms = Umkm::query()
+            ->orderByDesc('created_at')
+            ->get();
+
+        return view('admin.kelola_umkm', [
+            'umkms' => $umkms,
         ]);
     }
 
@@ -140,6 +152,85 @@ class AdminKelolaInformasiController extends Controller
         $agenda->delete();
 
         return back()->with('status', 'Agenda kalender berhasil dihapus.');
+    }
+
+    public function storeUmkm(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:2000'],
+            'contact_name' => ['required', 'string', 'max:255'],
+            'whatsapp_link' => ['required', 'url', 'max:255'],
+            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+        ]);
+
+        $data = [
+            'name' => $validated['name'],
+            'description' => $validated['description'] ?? null,
+            'contact_name' => $validated['contact_name'],
+            'whatsapp_link' => $validated['whatsapp_link'],
+        ];
+
+        if ($request->hasFile('photo')) {
+            $imageFile = $request->file('photo');
+            $mimeType = $imageFile->getMimeType() ?: 'application/octet-stream';
+            $data['photo_data'] = 'data:'.$mimeType.';base64,'.base64_encode((string) $imageFile->get());
+
+            $storedPath = $imageFile->store('umkm', $this->mediaDisk());
+            if (is_string($storedPath) && $storedPath !== '') {
+                $data['photo_path'] = $storedPath;
+            }
+        }
+
+        Umkm::create($data);
+
+        return back()->with('status', 'Data UMKM berhasil ditambahkan.');
+    }
+
+    public function updateUmkm(Request $request, Umkm $umkm)
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:2000'],
+            'contact_name' => ['required', 'string', 'max:255'],
+            'whatsapp_link' => ['required', 'url', 'max:255'],
+            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+        ]);
+
+        $umkm->name = $validated['name'];
+        $umkm->description = $validated['description'] ?? null;
+        $umkm->contact_name = $validated['contact_name'];
+        $umkm->whatsapp_link = $validated['whatsapp_link'];
+
+        if ($request->hasFile('photo')) {
+            if (!empty($umkm->photo_path)) {
+                Storage::disk($this->mediaDisk())->delete($umkm->photo_path);
+            }
+
+            $imageFile = $request->file('photo');
+            $mimeType = $imageFile->getMimeType() ?: 'application/octet-stream';
+            $umkm->photo_data = 'data:'.$mimeType.';base64,'.base64_encode((string) $imageFile->get());
+
+            $path = $imageFile->store('umkm', $this->mediaDisk());
+            if (is_string($path) && $path !== '') {
+                $umkm->photo_path = $path;
+            }
+        }
+
+        $umkm->save();
+
+        return back()->with('status', 'Data UMKM berhasil diperbarui.');
+    }
+
+    public function destroyUmkm(Umkm $umkm)
+    {
+        if (!empty($umkm->photo_path)) {
+            Storage::disk($this->mediaDisk())->delete($umkm->photo_path);
+        }
+
+        $umkm->delete();
+
+        return back()->with('status', 'Data UMKM berhasil dihapus.');
     }
 
     public function store(Request $request)

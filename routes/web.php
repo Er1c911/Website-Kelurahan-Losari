@@ -32,6 +32,7 @@ Route::get('/storage/{path}', function (string $path) {
 Route::get('/', [\App\Http\Controllers\KelolaInformasiController::class, 'index'])->name('home');
 Route::get('/informasi-desa', [\App\Http\Controllers\KelolaInformasiController::class, 'informasiDesa'])
     ->name('informasi-desa');
+Route::get('/umkm', [\App\Http\Controllers\KelolaInformasiController::class, 'umkm'])->name('umkm');
 Route::view('/kalender-desa', 'kalender_desa')->name('kalender-desa');
 Route::get('/kalender-desa/data', function (\Illuminate\Http\Request $request) {
     $now = now(config('app.timezone'));
@@ -113,10 +114,20 @@ Route::middleware(['auth'])->group(function () {
     // Halaman kelola beranda
     Route::get('/admin/kelola-beranda', [\App\Http\Controllers\AdminKelolaInformasiController::class, 'manageBeranda'])
         ->name('admin.kelola-beranda.manage');
+    Route::get('/admin/kelola-umkm', [\App\Http\Controllers\AdminKelolaInformasiController::class, 'manageUmkm'])
+        ->name('admin.kelola-umkm.manage');
     Route::post('/admin/kelola-beranda/video', [\App\Http\Controllers\AdminKelolaInformasiController::class, 'updateBerandaVideo'])
         ->name('admin.kelola-beranda.video.update');
     Route::delete('/admin/kelola-beranda/video', [\App\Http\Controllers\AdminKelolaInformasiController::class, 'destroyBerandaVideo'])
         ->name('admin.kelola-beranda.video.destroy');
+
+    // Endpoint CRUD pengelolaan UMKM
+    Route::post('/admin/kelola-umkm', [\App\Http\Controllers\AdminKelolaInformasiController::class, 'storeUmkm'])
+        ->name('admin.kelola-umkm.store');
+    Route::put('/admin/kelola-umkm/{umkm}', [\App\Http\Controllers\AdminKelolaInformasiController::class, 'updateUmkm'])
+        ->name('admin.kelola-umkm.update');
+    Route::delete('/admin/kelola-umkm/{umkm}', [\App\Http\Controllers\AdminKelolaInformasiController::class, 'destroyUmkm'])
+        ->name('admin.kelola-umkm.destroy');
 
     // Endpoint CRUD pengelolaan kalender kelurahan
     Route::post('/admin/kelola-kalender', [\App\Http\Controllers\AdminKelolaInformasiController::class, 'storeKalender'])
