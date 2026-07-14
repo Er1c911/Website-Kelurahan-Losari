@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Throwable;
 
 class AdminKelolaInformasiController extends Controller
 {
@@ -161,6 +162,12 @@ class AdminKelolaInformasiController extends Controller
 
     public function storeUmkm(Request $request)
     {
+        if (! Schema::hasTable('umkm')) {
+            return back()->withErrors([
+                'umkm' => 'Tabel UMKM belum tersedia di server. Jalankan migrasi terlebih dahulu.',
+            ])->withInput();
+        }
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
@@ -181,13 +188,24 @@ class AdminKelolaInformasiController extends Controller
             $mimeType = $imageFile->getMimeType() ?: 'application/octet-stream';
             $data['photo_data'] = 'data:'.$mimeType.';base64,'.base64_encode((string) $imageFile->get());
 
-            $storedPath = $imageFile->store('umkm', $this->mediaDisk());
-            if (is_string($storedPath) && $storedPath !== '') {
-                $data['photo_path'] = $storedPath;
+            try {
+                $storedPath = $imageFile->store('umkm', $this->mediaDisk());
+                if (is_string($storedPath) && $storedPath !== '') {
+                    $data['photo_path'] = $storedPath;
+                }
+            } catch (Throwable $exception) {
+                // On serverless filesystems, local disk writes can fail. Keep photo_data as fallback.
+                $data['photo_path'] = null;
             }
         }
 
-        Umkm::create($data);
+        try {
+            Umkm::create($data);
+        } catch (Throwable $exception) {
+            return back()->withErrors([
+                'umkm' => 'Gagal menyimpan data UMKM. Pastikan database production sudah siap.',
+            ])->withInput();
+        }
 
         return back()->with('status', 'Data UMKM berhasil ditambahkan.');
     }
