@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\KelolaInformasi;
 use App\Models\Umkm;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 
 class KelolaInformasiController extends Controller
@@ -31,9 +32,13 @@ class KelolaInformasiController extends Controller
 
     public function umkm()
     {
-        $umkms = Umkm::query()
-            ->orderByDesc('created_at')
-            ->get();
+        $umkms = collect();
+
+        if (Schema::hasTable('umkm')) {
+            $umkms = Umkm::query()
+                ->orderByDesc('created_at')
+                ->get();
+        }
 
         return view('umkm', [
             'umkms' => $umkms,

@@ -6,6 +6,7 @@ use App\Models\AgendaKalender;
 use App\Models\KelolaInformasi;
 use App\Models\Umkm;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -60,9 +61,13 @@ class AdminKelolaInformasiController extends Controller
 
     public function manageUmkm()
     {
-        $umkms = Umkm::query()
-            ->orderByDesc('created_at')
-            ->get();
+        $umkms = collect();
+
+        if (Schema::hasTable('umkm')) {
+            $umkms = Umkm::query()
+                ->orderByDesc('created_at')
+                ->get();
+        }
 
         return view('admin.kelola_umkm', [
             'umkms' => $umkms,
