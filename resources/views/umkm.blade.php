@@ -122,12 +122,9 @@
         onclick="if(event.target===this) closeMenuGallery()"
     >
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
-        <div class="relative bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+        <div class="relative bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] flex flex-col overflow-hidden">
             <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200 shrink-0">
-                <div>
-                    <h3 id="menu-gallery-title" class="text-base font-bold text-blue-900">Menu / Pricelist</h3>
-                    <p id="gallery-counter" class="text-xs text-gray-500 mt-1">Gambar 1 dari 1</p>
-                </div>
+                <h3 id="menu-gallery-title" class="text-base font-bold text-blue-900">Menu / Pricelist</h3>
                 <button
                     type="button"
                     onclick="closeMenuGallery()"
@@ -138,38 +135,22 @@
                     </svg>
                 </button>
             </div>
-            <div class="overflow-y-auto p-4 flex-1 flex items-center justify-center">
-                <img id="gallery-img" src="" alt="" class="max-w-full max-h-full object-contain rounded-lg">
-            </div>
-            <div class="flex items-center justify-between px-5 py-4 border-t border-gray-200 shrink-0">
-                <button
-                    type="button"
-                    id="prev-btn"
-                    onclick="prevImage()"
-                    class="inline-flex items-center bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold px-4 py-2 rounded-lg transition">
-                    ← Sebelumnya
-                </button>
-                <button
-                    type="button"
-                    id="next-btn"
-                    onclick="nextImage()"
-                    class="inline-flex items-center bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold px-4 py-2 rounded-lg transition">
-                    Berikutnya →
-                </button>
+            <div class="overflow-y-auto p-6 flex-1">
+                <div id="gallery-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <!-- Gambar akan ditambahkan oleh JavaScript -->
+                </div>
             </div>
         </div>
     </div>
 
     <script>
         let galleryImages = [];
-        let currentImageIndex = 0;
 
         function openMenuGallery(images, name) {
             galleryImages = images;
-            currentImageIndex = 0;
             const modal = document.getElementById('menu-gallery-modal');
             document.getElementById('menu-gallery-title').textContent = 'Menu / Pricelist – ' + name;
-            displayImage();
+            displayGallery();
             modal.classList.remove('hidden');
             modal.classList.add('flex');
             document.body.style.overflow = 'hidden';
@@ -182,37 +163,27 @@
             document.body.style.overflow = '';
         }
 
-        function displayImage() {
-            const img = document.getElementById('gallery-img');
-            img.src = galleryImages[currentImageIndex];
-            document.getElementById('gallery-counter').textContent = `Gambar ${currentImageIndex + 1} dari ${galleryImages.length}`;
+        function displayGallery() {
+            const galleryGrid = document.getElementById('gallery-grid');
+            galleryGrid.innerHTML = '';
             
-            const prevBtn = document.getElementById('prev-btn');
-            const nextBtn = document.getElementById('next-btn');
-            
-            prevBtn.style.display = currentImageIndex === 0 ? 'none' : 'inline-flex';
-            nextBtn.style.display = currentImageIndex === galleryImages.length - 1 ? 'none' : 'inline-flex';
-        }
-
-        function prevImage() {
-            if (currentImageIndex > 0) {
-                currentImageIndex--;
-                displayImage();
-            }
-        }
-
-        function nextImage() {
-            if (currentImageIndex < galleryImages.length - 1) {
-                currentImageIndex++;
-                displayImage();
-            }
+            galleryImages.forEach((imgSrc) => {
+                const imgContainer = document.createElement('div');
+                imgContainer.className = 'bg-gray-100 rounded-lg overflow-hidden aspect-square';
+                
+                const img = document.createElement('img');
+                img.src = imgSrc;
+                img.alt = 'Menu image';
+                img.className = 'w-full h-full object-cover hover:scale-105 transition-transform duration-300 cursor-zoom-in';
+                
+                imgContainer.appendChild(img);
+                galleryGrid.appendChild(imgContainer);
+            });
         }
 
         document.addEventListener('keydown', function (e) {
             if (document.getElementById('menu-gallery-modal').classList.contains('hidden')) return;
             if (e.key === 'Escape') closeMenuGallery();
-            if (e.key === 'ArrowLeft') prevImage();
-            if (e.key === 'ArrowRight') nextImage();
         });
     </script>
 
