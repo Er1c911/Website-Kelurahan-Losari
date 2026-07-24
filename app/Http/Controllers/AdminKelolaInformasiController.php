@@ -292,6 +292,19 @@ class AdminKelolaInformasiController extends Controller
         return back()->with('status', 'Data UMKM berhasil dihapus.');
     }
 
+    public function destroyUmkmPhoto(Umkm $umkm)
+    {
+        if (!empty($umkm->photo_path)) {
+            Storage::disk($this->mediaDisk())->delete($umkm->photo_path);
+            $umkm->photo_path = null;
+        }
+
+        $umkm->photo_data = null;
+        $umkm->save();
+
+        return back()->with('status', 'Foto UMKM berhasil dihapus.');
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
