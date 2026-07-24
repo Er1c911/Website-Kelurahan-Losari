@@ -12,6 +12,8 @@ class Umkm extends Model
         'name',
         'photo_path',
         'photo_data',
+        'menu_path',
+        'menu_data',
         'description',
         'contact_name',
         'whatsapp_link',

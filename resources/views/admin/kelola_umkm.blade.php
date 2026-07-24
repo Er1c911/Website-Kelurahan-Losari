@@ -68,6 +68,13 @@
                                class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white">
                     </div>
 
+                    <div>
+                        <label for="menu" class="block text-sm font-semibold mb-1">Gambar Menu / Pricelist (opsional)</label>
+                        <input type="file" id="menu" name="menu" accept="image/*"
+                               class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white">
+                        <p class="text-xs text-gray-500 mt-1">Format: JPG, PNG, WebP. Maks 4MB.</p>
+                    </div>
+
                     <button type="submit"
                             class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-lg transition">
                         Simpan UMKM
@@ -119,6 +126,20 @@
                                 <label class="block text-sm font-semibold mb-1">Ganti Foto (opsional)</label>
                                 <input type="file" name="photo" accept="image/*"
                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white">
+                            </div>
+
+                            @if ($item->menu_data || $item->menu_path)
+                                <div>
+                                    <p class="text-sm font-semibold mb-2">Gambar Menu / Pricelist Saat Ini</p>
+                                    <img src="{{ $item->menu_data ?: \Illuminate\Support\Facades\Storage::disk(config('filesystems.media', 'public'))->url($item->menu_path) }}" alt="Menu {{ $item->name }}" class="w-full max-w-md rounded-lg border border-gray-200 object-contain bg-gray-50">
+                                </div>
+                            @endif
+
+                            <div>
+                                <label class="block text-sm font-semibold mb-1">{{ ($item->menu_data || $item->menu_path) ? 'Ganti Gambar Menu / Pricelist (opsional)' : 'Gambar Menu / Pricelist (opsional)' }}</label>
+                                <input type="file" name="menu" accept="image/*"
+                                       class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white">
+                                <p class="text-xs text-gray-500 mt-1">Format: JPG, PNG, WebP. Maks 4MB.</p>
                             </div>
 
                             <button type="submit"

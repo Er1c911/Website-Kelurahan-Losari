@@ -174,6 +174,7 @@ class AdminKelolaInformasiController extends Controller
             'contact_name' => ['required', 'string', 'max:255'],
             'whatsapp_link' => ['required', 'url', 'max:255'],
             'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+            'menu' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
         ]);
 
         $data = [
@@ -199,6 +200,21 @@ class AdminKelolaInformasiController extends Controller
             }
         }
 
+        if ($request->hasFile('menu')) {
+            $menuFile = $request->file('menu');
+            $mimeType = $menuFile->getMimeType() ?: 'application/octet-stream';
+            $data['menu_data'] = 'data:'.$mimeType.';base64,'.base64_encode((string) $menuFile->get());
+
+            try {
+                $storedPath = $menuFile->store('umkm/menu', $this->mediaDisk());
+                if (is_string($storedPath) && $storedPath !== '') {
+                    $data['menu_path'] = $storedPath;
+                }
+            } catch (Throwable $exception) {
+                $data['menu_path'] = null;
+            }
+        }
+
         try {
             Umkm::create($data);
         } catch (Throwable $exception) {
@@ -218,6 +234,7 @@ class AdminKelolaInformasiController extends Controller
             'contact_name' => ['required', 'string', 'max:255'],
             'whatsapp_link' => ['required', 'url', 'max:255'],
             'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+            'menu' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
         ]);
 
         $umkm->name = $validated['name'];
@@ -240,6 +257,21 @@ class AdminKelolaInformasiController extends Controller
             }
         }
 
+        if ($request->hasFile('menu')) {
+            if (!empty($umkm->menu_path)) {
+                Storage::disk($this->mediaDisk())->delete($umkm->menu_path);
+            }
+
+            $menuFile = $request->file('menu');
+            $mimeType = $menuFile->getMimeType() ?: 'application/octet-stream';
+            $umkm->menu_data = 'data:'.$mimeType.';base64,'.base64_encode((string) $menuFile->get());
+
+            $path = $menuFile->store('umkm/menu', $this->mediaDisk());
+            if (is_string($path) && $path !== '') {
+                $umkm->menu_path = $path;
+            }
+        }
+
         $umkm->save();
 
         return back()->with('status', 'Data UMKM berhasil diperbarui.');
@@ -249,6 +281,10 @@ class AdminKelolaInformasiController extends Controller
     {
         if (!empty($umkm->photo_path)) {
             Storage::disk($this->mediaDisk())->delete($umkm->photo_path);
+        }
+
+        if (!empty($umkm->menu_path)) {
+            Storage::disk($this->mediaDisk())->delete($umkm->menu_path);
         }
 
         $umkm->delete();

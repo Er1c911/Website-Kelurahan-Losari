@@ -83,13 +83,25 @@
                     <h2 class="text-xl font-extrabold text-blue-900 mb-2">{{ $item->name }}</h2>
                     <p class="text-sm text-gray-600 leading-relaxed mb-4">{{ $item->description ?: 'Deskripsi belum tersedia.' }}</p>
 
-                    <div class="space-y-2">
+                    <div class="flex flex-wrap gap-2">
                         <a href="{{ $item->whatsapp_link }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 rounded-lg bg-green-500 hover:bg-green-600 text-white text-sm font-semibold px-3 py-2 transition">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" fill="currentColor" class="h-4 w-4" aria-hidden="true">
                                 <path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3 18.7-68.1-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z" />
                             </svg>
                             {{ $item->contact_name }}
                         </a>
+
+                        @if ($item->menu_data || $item->menu_path)
+                            <button
+                                type="button"
+                                onclick="openMenuModal('{{ $item->menu_data ?: \Illuminate\Support\Facades\Storage::disk(config('filesystems.media', 'public'))->url($item->menu_path) }}', '{{ e($item->name) }}')"
+                                class="inline-flex items-center gap-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-3 py-2 transition">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M2.25 4.5A.75.75 0 0 1 3 3.75h14.25a.75.75 0 0 1 0 1.5H3a.75.75 0 0 1-.75-.75Zm0 4.5A.75.75 0 0 1 3 8.25h9.75a.75.75 0 0 1 0 1.5H3A.75.75 0 0 1 2.25 9Zm15-.75A.75.75 0 0 1 18 9v10.19l3.22-3.22a.75.75 0 1 1 1.06 1.06l-4.5 4.5a.75.75 0 0 1-1.06 0l-4.5-4.5a.75.75 0 1 1 1.06-1.06l3.22 3.22V9a.75.75 0 0 1 .75-.75Zm-15 5.25a.75.75 0 0 1 .75-.75h9.75a.75.75 0 0 1 0 1.5H3a.75.75 0 0 1-.75-.75Z" clip-rule="evenodd" />
+                                </svg>
+                                Menu / Pricelist
+                            </button>
+                        @endif
                     </div>
                 </article>
             @empty
@@ -99,6 +111,58 @@
             @endforelse
         </section>
     </main>
+
+    {{-- Modal Menu / Pricelist --}}
+    <div
+        id="menu-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="menu-modal-title"
+        class="fixed inset-0 z-50 hidden items-center justify-center p-4"
+        onclick="if(event.target===this) closeMenuModal()"
+    >
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden">
+            <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200 shrink-0">
+                <h3 id="menu-modal-title" class="text-base font-bold text-blue-900">Menu / Pricelist</h3>
+                <button
+                    type="button"
+                    onclick="closeMenuModal()"
+                    class="text-gray-400 hover:text-gray-600 transition rounded-lg p-1 -mr-1"
+                    aria-label="Tutup">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                        <path fill-rule="evenodd" d="M5.47 5.47a.75.75 0 0 1 1.06 0L12 10.94l5.47-5.47a.75.75 0 1 1 1.06 1.06L13.06 12l5.47 5.47a.75.75 0 1 1-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 0 1-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </div>
+            <div class="overflow-y-auto p-4">
+                <img id="menu-modal-img" src="" alt="" class="w-full rounded-xl object-contain max-h-[70vh]">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openMenuModal(src, name) {
+            const modal = document.getElementById('menu-modal');
+            document.getElementById('menu-modal-img').src = src;
+            document.getElementById('menu-modal-img').alt = 'Menu / Pricelist ' + name;
+            document.getElementById('menu-modal-title').textContent = 'Menu / Pricelist – ' + name;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeMenuModal() {
+            const modal = document.getElementById('menu-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.style.overflow = '';
+        }
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeMenuModal();
+        });
+    </script>
 
     <footer id="kontak" class="bg-gray-900 text-gray-400 py-5 text-center border-t border-gray-800">
         <div class="max-w-7xl mx-auto px-4">
