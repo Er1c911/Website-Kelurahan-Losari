@@ -169,12 +169,12 @@
             
             galleryImages.forEach((imgSrc) => {
                 const imgContainer = document.createElement('div');
-                imgContainer.className = 'bg-gray-100 rounded-lg overflow-hidden aspect-square';
+                imgContainer.className = 'bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center min-h-[250px]';
                 
                 const img = document.createElement('img');
                 img.src = imgSrc;
                 img.alt = 'Menu image';
-                img.className = 'w-full h-full object-cover hover:scale-105 transition-transform duration-300 cursor-zoom-in';
+                img.className = 'max-w-full max-h-full object-contain hover:scale-105 transition-transform duration-300 cursor-zoom-in';
                 
                 imgContainer.appendChild(img);
                 galleryGrid.appendChild(imgContainer);
