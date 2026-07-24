@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Umkm extends Model
 {
@@ -18,4 +19,9 @@ class Umkm extends Model
         'contact_name',
         'whatsapp_link',
     ];
+
+    public function menuImages(): HasMany
+    {
+        return $this->hasMany(UmkmMenuImage::class);
+    }
 }

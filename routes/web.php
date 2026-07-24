@@ -130,6 +130,10 @@ Route::middleware(['auth'])->group(function () {
         ->name('admin.kelola-umkm.destroy');
     Route::delete('/admin/kelola-umkm/{umkm}/photo', [\App\Http\Controllers\AdminKelolaInformasiController::class, 'destroyUmkmPhoto'])
         ->name('admin.kelola-umkm.photo.destroy');
+    Route::post('/admin/kelola-umkm/{umkm}/menu-images', [\App\Http\Controllers\AdminKelolaInformasiController::class, 'storeUmkmMenuImages'])
+        ->name('admin.kelola-umkm.menu-images.store');
+    Route::delete('/admin/kelola-umkm/menu-images/{menuImage}', [\App\Http\Controllers\AdminKelolaInformasiController::class, 'destroyUmkmMenuImage'])
+        ->name('admin.kelola-umkm.menu-images.destroy');
 
     // Endpoint CRUD pengelolaan kalender kelurahan
     Route::post('/admin/kelola-kalender', [\App\Http\Controllers\AdminKelolaInformasiController::class, 'storeKalender'])

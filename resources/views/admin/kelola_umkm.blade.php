@@ -68,13 +68,6 @@
                                class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white">
                     </div>
 
-                    <div>
-                        <label for="menu" class="block text-sm font-semibold mb-1">Gambar Menu / Pricelist (opsional)</label>
-                        <input type="file" id="menu" name="menu" accept="image/*"
-                               class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white">
-                        <p class="text-xs text-gray-500 mt-1">Format: JPG, PNG, WebP. Maks 4MB.</p>
-                    </div>
-
                     <button type="submit"
                             class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-lg transition">
                         Simpan UMKM
@@ -128,25 +121,48 @@
                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white">
                             </div>
 
-                            @if ($item->menu_data || $item->menu_path)
-                                <div>
-                                    <p class="text-sm font-semibold mb-2">Gambar Menu / Pricelist Saat Ini</p>
-                                    <img src="{{ $item->menu_data ?: \Illuminate\Support\Facades\Storage::disk(config('filesystems.media', 'public'))->url($item->menu_path) }}" alt="Menu {{ $item->name }}" class="w-full max-w-md rounded-lg border border-gray-200 object-contain bg-gray-50">
-                                </div>
-                            @endif
-
-                            <div>
-                                <label class="block text-sm font-semibold mb-1">{{ ($item->menu_data || $item->menu_path) ? 'Ganti Gambar Menu / Pricelist (opsional)' : 'Gambar Menu / Pricelist (opsional)' }}</label>
-                                <input type="file" name="menu" accept="image/*"
-                                       class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white">
-                                <p class="text-xs text-gray-500 mt-1">Format: JPG, PNG, WebP. Maks 4MB.</p>
-                            </div>
-
                             <button type="submit"
                                     class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition">
                                 Update UMKM
                             </button>
                         </form>
+
+                        {{-- Menu Images Gallery --}}
+                        <div class="mt-6 pt-6 border-t border-gray-200">
+                            <h3 class="text-lg font-bold mb-4">Gambar Menu / Pricelist</h3>
+
+                            @if ($item->menuImages->count() > 0)
+                                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-6">
+                                    @foreach ($item->menuImages as $menuImage)
+                                        <div class="relative group">
+                                            <img src="{{ $menuImage->image_data ?: \Illuminate\Support\Facades\Storage::disk(config('filesystems.media', 'public'))->url($menuImage->image_path) }}" alt="Menu" class="w-full aspect-square object-cover rounded-lg border border-gray-200">
+                                            <form action="{{ route('admin.kelola-umkm.menu-images.destroy', $menuImage) }}" method="POST" onsubmit="return confirm('Hapus gambar menu ini?');" class="absolute inset-0 rounded-lg bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-semibold px-3 py-2 rounded-lg transition">
+                                                    Hapus
+                                                </button>
+                                            </form>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @else
+                                <p class="text-sm text-gray-500 mb-4">Belum ada gambar menu yang diunggah.</p>
+                            @endif
+
+                            <form action="{{ route('admin.kelola-umkm.menu-images.store', $item) }}" method="POST" enctype="multipart/form-data" class="space-y-3">
+                                @csrf
+                                <div>
+                                    <label class="block text-sm font-semibold mb-2">Upload Gambar Menu / Pricelist (bisa multiple)</label>
+                                    <input type="file" name="menu_images[]" accept="image/*" multiple
+                                           class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white">
+                                    <p class="text-xs text-gray-500 mt-1">Format: JPG, PNG, WebP. Maks 4MB per gambar. Bisa pilih multiple file sekaligus.</p>
+                                </div>
+                                <button type="submit" class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded-lg transition">
+                                    Upload Gambar Menu
+                                </button>
+                            </form>
+                        </div>
 
                         <form action="{{ route('admin.kelola-umkm.destroy', $item) }}" method="POST" onsubmit="return confirm('Hapus data UMKM ini?');" class="mt-3">
                             @csrf
