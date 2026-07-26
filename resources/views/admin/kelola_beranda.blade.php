@@ -35,7 +35,6 @@
                     <h3 class="text-lg font-bold text-gray-800">Ganti Video Beranda</h3>
                     <p class="mt-2 text-sm text-gray-600 leading-relaxed">
                         Unggah video profil baru untuk ditampilkan pada halaman beranda.
-                        Maksimal ukuran file 4 MB agar kompatibel dengan Vercel.
                     </p>
 
                     <form action="{{ route('admin.kelola-beranda.video.update') }}" method="POST" enctype="multipart/form-data" class="mt-6 space-y-4">

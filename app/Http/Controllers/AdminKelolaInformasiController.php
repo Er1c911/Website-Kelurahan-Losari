@@ -79,12 +79,11 @@ class AdminKelolaInformasiController extends Controller
     public function updateBerandaVideo(Request $request)
     {
         $validated = $request->validate([
-            'video' => ['required', 'file', 'mimetypes:video/mp4,video/webm,video/ogg,video/quicktime', 'max:4096'],
+            'video' => ['required', 'file', 'mimetypes:video/mp4,video/webm,video/ogg,video/quicktime'],
         ], [
             'video.required' => 'Silakan pilih video terlebih dahulu.',
             'video.file' => 'File yang dipilih untuk video tidak valid.',
             'video.mimetypes' => 'File video yang diunggah tidak didukung.',
-            'video.max' => 'Ukuran video maksimal 4 MB agar kompatibel dengan Vercel.',
         ]);
 
         $currentVideoPath = $this->getBerandaVideoPath();
