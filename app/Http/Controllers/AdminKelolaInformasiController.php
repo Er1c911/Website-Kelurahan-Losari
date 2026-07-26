@@ -18,8 +18,6 @@ class AdminKelolaInformasiController extends Controller
 
     private const BERANDA_VIDEO_BASENAME = 'video-profil-desa';
 
-    private const BERANDA_VIDEO_URL_KEY = '__beranda_video_url__';
-
     private function mediaDisk(): string
     {
         return (string) config('filesystems.media', 'public');
@@ -35,7 +33,6 @@ class AdminKelolaInformasiController extends Controller
     public function manage()
     {
         $informasi = KelolaInformasi::query()
-            ->where('key', '!=', self::BERANDA_VIDEO_URL_KEY)
             ->orderByDesc('created_at')
             ->get();
 
@@ -59,13 +56,8 @@ class AdminKelolaInformasiController extends Controller
 
     public function manageBeranda()
     {
-        $videoUrlSetting = KelolaInformasi::query()
-            ->where('key', self::BERANDA_VIDEO_URL_KEY)
-            ->value('description');
-
         return view('admin.kelola_beranda', [
             'videoPath' => $this->getBerandaVideoPath(),
-            'videoUrlSetting' => is_string($videoUrlSetting) ? $videoUrlSetting : null,
         ]);
     }
 
@@ -87,42 +79,49 @@ class AdminKelolaInformasiController extends Controller
     public function updateBerandaVideo(Request $request)
     {
         $validated = $request->validate([
-            'video_url' => ['required', 'url', 'max:2048', 'regex:/\.(mp4|webm|ogg|mov)(\?.*)?$/i'],
+            'video' => ['required', 'file', 'mimetypes:video/mp4,video/webm,video/ogg,video/quicktime', 'max:4096'],
         ], [
-            'video_url.required' => 'Silakan isi URL video terlebih dahulu.',
-            'video_url.url' => 'Format URL video tidak valid.',
-            'video_url.max' => 'URL video terlalu panjang.',
-            'video_url.regex' => 'Gunakan URL langsung ke file video (.mp4, .webm, .ogg, atau .mov).',
+            'video.required' => 'Silakan pilih video terlebih dahulu.',
+            'video.file' => 'File yang dipilih untuk video tidak valid.',
+            'video.mimetypes' => 'File video yang diunggah tidak didukung.',
+            'video.max' => 'Ukuran video maksimal 4 MB agar kompatibel dengan Vercel.',
         ]);
 
-        KelolaInformasi::query()->updateOrCreate(
-            ['key' => self::BERANDA_VIDEO_URL_KEY],
-            [
-                'title' => 'Beranda Video URL',
-                'description' => $validated['video_url'],
-                'image_path' => null,
-                'image_data' => null,
-            ]
+        $currentVideoPath = $this->getBerandaVideoPath();
+        if ($currentVideoPath !== null) {
+            Storage::disk($this->mediaDisk())->delete($currentVideoPath);
+        }
+
+        $extension = $validated['video']->getClientOriginalExtension() ?: $validated['video']->extension();
+        $path = $validated['video']->storeAs(
+            self::BERANDA_VIDEO_DIRECTORY,
+            self::BERANDA_VIDEO_BASENAME.'.'.$extension,
+            $this->mediaDisk()
         );
 
+        if (! is_string($path) || $path === '') {
+            return back()->withErrors([
+                'video' => 'Gagal menyimpan video. Silakan coba lagi.',
+            ]);
+        }
+
         return back()->with([
-            'status' => 'URL video beranda berhasil diperbarui.',
+            'status' => 'Video beranda berhasil diperbarui.',
+            'videoPath' => $path,
         ]);
     }
 
     public function destroyBerandaVideo()
     {
-        KelolaInformasi::query()
-            ->where('key', self::BERANDA_VIDEO_URL_KEY)
-            ->delete();
-
         $currentVideoPath = $this->getBerandaVideoPath();
 
-        if ($currentVideoPath !== null) {
-            Storage::disk($this->mediaDisk())->delete($currentVideoPath);
+        if ($currentVideoPath === null) {
+            return back()->with('status', 'Video beranda kustom tidak ditemukan.');
         }
 
-        return back()->with('status', 'Pengaturan video beranda berhasil dihapus. Halaman publik kembali memakai video bawaan.');
+        Storage::disk($this->mediaDisk())->delete($currentVideoPath);
+
+        return back()->with('status', 'Video beranda berhasil dihapus. Halaman publik kembali memakai video bawaan.');
     }
 
     public function storeKalender(Request $request)

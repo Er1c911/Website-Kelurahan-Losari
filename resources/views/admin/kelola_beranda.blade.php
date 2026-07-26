@@ -32,29 +32,26 @@
 
             <div class="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
                 <div class="bg-white border border-gray-200 rounded-xl p-6 md:p-8">
-                    <h3 class="text-lg font-bold text-gray-800">Atur URL Video Beranda</h3>
+                    <h3 class="text-lg font-bold text-gray-800">Ganti Video Beranda</h3>
                     <p class="mt-2 text-sm text-gray-600 leading-relaxed">
-                        Pada Vercel, upload file video besar akan gagal karena batas payload serverless.
-                        Gunakan URL langsung ke file video (.mp4/.webm/.ogg/.mov) dari penyimpanan eksternal.
+                        Unggah video profil baru untuk ditampilkan pada halaman beranda.
+                        Maksimal ukuran file 4 MB agar kompatibel dengan Vercel.
                     </p>
 
-                    <form action="{{ route('admin.kelola-beranda.video.update') }}" method="POST" class="mt-6 space-y-4">
+                    <form action="{{ route('admin.kelola-beranda.video.update') }}" method="POST" enctype="multipart/form-data" class="mt-6 space-y-4">
                         @csrf
 
                         <div>
-                            <label for="video_url" class="block text-sm font-semibold text-gray-700 mb-2">URL Video</label>
+                            <label for="video" class="block text-sm font-semibold text-gray-700 mb-2">File Video</label>
                             <input
-                                id="video_url"
-                                name="video_url"
-                                type="url"
-                                inputmode="url"
-                                placeholder="https://contoh-cdn.com/video-profil-desa.mp4"
-                                value="{{ old('video_url', $videoUrlSetting) }}"
-                                class="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-700"
+                                id="video"
+                                name="video"
+                                type="file"
+                                accept="video/mp4,video/webm,video/ogg,video/quicktime,.mov"
+                                class="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-700 file:mr-4 file:rounded-md file:border-0 file:bg-orange-500 file:px-4 file:py-2 file:font-semibold file:text-white hover:file:bg-orange-600"
                                 required
                             >
-                            <p class="mt-2 text-xs text-gray-500">Contoh valid: URL langsung ke file video, bukan link halaman.</p>
-                            @error('video_url')
+                            @error('video')
                                 <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                             @enderror
                         </div>
@@ -63,7 +60,7 @@
                             type="submit"
                             class="inline-flex items-center justify-center rounded-lg bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-orange-600"
                         >
-                            Simpan URL Video
+                            Simpan Video Beranda
                         </button>
                     </form>
                 </div>
@@ -89,27 +86,9 @@
                                 Hapus Video Kustom
                             </button>
                         </form>
-                    @elseif ($videoUrlSetting)
-                        <div class="mt-4 overflow-hidden rounded-2xl bg-black shadow-lg">
-                            <video class="w-full aspect-video object-cover block" controls preload="metadata">
-                                <source src="{{ $videoUrlSetting }}">
-                                Browser Anda tidak mendukung pemutaran video.
-                            </video>
-                        </div>
-                        <p class="mt-3 text-sm text-gray-500 break-all">Sumber aktif (URL): {{ $videoUrlSetting }}</p>
-                        <form action="{{ route('admin.kelola-beranda.video.destroy') }}" method="POST" class="mt-4">
-                            @csrf
-                            @method('DELETE')
-                            <button
-                                type="submit"
-                                class="inline-flex items-center justify-center rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-700 transition hover:bg-red-100"
-                            >
-                                Hapus Pengaturan Video
-                            </button>
-                        </form>
                     @else
                         <div class="mt-4 rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-4 py-8 text-center text-sm text-gray-500">
-                            Belum ada video beranda yang diatur. Halaman publik masih memakai video bawaan.
+                            Belum ada video beranda yang diunggah. Halaman publik masih memakai video bawaan.
                         </div>
                     @endif
                 </div>
