@@ -58,15 +58,25 @@
 
             <div class="w-full max-w-5xl mx-auto mb-12 px-2 sm:px-4"> 
                 <div class="relative w-full overflow-hidden rounded-3xl border-4 border-white/10 shadow-2xl bg-black">
-                    <video
-                        class="w-full aspect-video object-cover block"
-                        src="{{ $homeVideoUrl }}"
-                        autoplay
-                        loop
-                        muted
-                        playsinline
-                        preload="auto"
-                    ></video>
+                    @if ($homeVideoUseIframe)
+                        <iframe
+                            class="w-full aspect-video block"
+                            src="{{ $homeVideoUrl }}"
+                            allow="autoplay; fullscreen"
+                            allowfullscreen
+                            loading="lazy"
+                        ></iframe>
+                    @else
+                        <video
+                            class="w-full aspect-video object-cover block"
+                            src="{{ $homeVideoUrl }}"
+                            autoplay
+                            loop
+                            muted
+                            playsinline
+                            preload="auto"
+                        ></video>
+                    @endif
                 </div>
             </div>
 

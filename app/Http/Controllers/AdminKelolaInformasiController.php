@@ -18,6 +18,8 @@ class AdminKelolaInformasiController extends Controller
 
     private const BERANDA_VIDEO_BASENAME = 'video-profil-desa';
 
+    private const BERANDA_VIDEO_URL_KEY = '__beranda_video_url__';
+
     private function mediaDisk(): string
     {
         return (string) config('filesystems.media', 'public');
@@ -33,6 +35,7 @@ class AdminKelolaInformasiController extends Controller
     public function manage()
     {
         $informasi = KelolaInformasi::query()
+            ->where('key', '!=', self::BERANDA_VIDEO_URL_KEY)
             ->orderByDesc('created_at')
             ->get();
 
@@ -56,8 +59,17 @@ class AdminKelolaInformasiController extends Controller
 
     public function manageBeranda()
     {
+        $videoUrlSetting = KelolaInformasi::query()
+            ->where('key', self::BERANDA_VIDEO_URL_KEY)
+            ->value('description');
+
+        $videoUrlSetting = is_string($videoUrlSetting) ? $videoUrlSetting : null;
+
         return view('admin.kelola_beranda', [
             'videoPath' => $this->getBerandaVideoPath(),
+            'videoUrlSetting' => $videoUrlSetting,
+            'videoPreviewUrl' => $this->buildEmbeddedVideoUrl($videoUrlSetting),
+            'videoPreviewUseIframe' => $this->shouldUseIframePlayer($videoUrlSetting),
         ]);
     }
 
@@ -79,42 +91,54 @@ class AdminKelolaInformasiController extends Controller
     public function updateBerandaVideo(Request $request)
     {
         $validated = $request->validate([
-            'video' => ['required', 'file', 'mimetypes:video/mp4,video/webm,video/ogg,video/quicktime'],
+            'video_url' => ['required', 'url', 'max:2048'],
         ], [
-            'video.required' => 'Silakan pilih video terlebih dahulu.',
-            'video.file' => 'File yang dipilih untuk video tidak valid.',
-            'video.mimetypes' => 'File video yang diunggah tidak didukung.',
+            'video_url.required' => 'Silakan isi URL video terlebih dahulu.',
+            'video_url.url' => 'Format URL video tidak valid.',
+            'video_url.max' => 'URL video terlalu panjang.',
         ]);
+
+        $normalizedVideoUrl = $this->normalizeVideoUrl((string) $validated['video_url']);
+
+        if (! $this->isSupportedVideoUrl($normalizedVideoUrl)) {
+            return back()->withErrors([
+                'video_url' => 'Gunakan URL langsung ke file video (.mp4, .webm, .ogg, atau .mov), atau link Google Drive /file/d/...',
+            ])->withInput();
+        }
+
+        KelolaInformasi::query()->updateOrCreate(
+            ['key' => self::BERANDA_VIDEO_URL_KEY],
+            [
+                'title' => 'Beranda Video URL',
+                'description' => $normalizedVideoUrl,
+                'image_path' => null,
+                'image_data' => null,
+            ]
+        );
 
         $currentVideoPath = $this->getBerandaVideoPath();
         if ($currentVideoPath !== null) {
             Storage::disk($this->mediaDisk())->delete($currentVideoPath);
         }
 
-        $extension = $validated['video']->getClientOriginalExtension() ?: $validated['video']->extension();
-        $path = $validated['video']->storeAs(
-            self::BERANDA_VIDEO_DIRECTORY,
-            self::BERANDA_VIDEO_BASENAME.'.'.$extension,
-            $this->mediaDisk()
-        );
-
-        if (! is_string($path) || $path === '') {
-            return back()->withErrors([
-                'video' => 'Gagal menyimpan video. Silakan coba lagi.',
-            ]);
-        }
-
         return back()->with([
             'status' => 'Video beranda berhasil diperbarui.',
-            'videoPath' => $path,
         ]);
     }
 
     public function destroyBerandaVideo()
     {
+        $deletedUrlSetting = KelolaInformasi::query()
+            ->where('key', self::BERANDA_VIDEO_URL_KEY)
+            ->delete();
+
         $currentVideoPath = $this->getBerandaVideoPath();
 
         if ($currentVideoPath === null) {
+            if ($deletedUrlSetting > 0) {
+                return back()->with('status', 'Video beranda berhasil dihapus. Halaman publik kembali memakai video bawaan.');
+            }
+
             return back()->with('status', 'Video beranda kustom tidak ditemukan.');
         }
 
@@ -396,6 +420,70 @@ class AdminKelolaInformasiController extends Controller
             if (Storage::disk($this->mediaDisk())->exists($path)) {
                 return $path;
             }
+        }
+
+        return null;
+    }
+
+    private function normalizeVideoUrl(string $url): string
+    {
+        $trimmed = trim($url);
+
+        if (preg_match('#^https?://drive\.google\.com/file/d/([^/]+)/#i', $trimmed, $matches) === 1) {
+            return 'https://drive.google.com/uc?export=download&id='.$matches[1];
+        }
+
+        if (preg_match('#^https?://drive\.google\.com/open\?id=([^&]+)#i', $trimmed, $matches) === 1) {
+            return 'https://drive.google.com/uc?export=download&id='.$matches[1];
+        }
+
+        return $trimmed;
+    }
+
+    private function isSupportedVideoUrl(string $url): bool
+    {
+        if (preg_match('/\.(mp4|webm|ogg|mov)(\?.*)?$/i', $url) === 1) {
+            return true;
+        }
+
+        return preg_match('#^https?://drive\.google\.com/uc\?export=download&id=[A-Za-z0-9_-]+$#i', $url) === 1;
+    }
+
+    private function shouldUseIframePlayer(?string $url): bool
+    {
+        return $this->extractGoogleDriveFileId($url) !== null;
+    }
+
+    private function buildEmbeddedVideoUrl(?string $url): ?string
+    {
+        if (! is_string($url) || $url === '') {
+            return null;
+        }
+
+        $fileId = $this->extractGoogleDriveFileId($url);
+        if ($fileId !== null) {
+            return 'https://drive.google.com/file/d/'.$fileId.'/preview';
+        }
+
+        return $url;
+    }
+
+    private function extractGoogleDriveFileId(?string $url): ?string
+    {
+        if (! is_string($url) || $url === '') {
+            return null;
+        }
+
+        if (preg_match('#^https?://drive\.google\.com/file/d/([^/]+)/#i', $url, $matches) === 1) {
+            return $matches[1];
+        }
+
+        if (preg_match('#^https?://drive\.google\.com/open\?id=([^&]+)#i', $url, $matches) === 1) {
+            return $matches[1];
+        }
+
+        if (preg_match('#^https?://drive\.google\.com/uc\?export=download&id=([A-Za-z0-9_-]+)$#i', $url, $matches) === 1) {
+            return $matches[1];
         }
 
         return null;
