@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Storage;
 
 class KelolaInformasiController extends Controller
 {
+    private const BERANDA_VIDEO_URL_KEY = '__beranda_video_url__';
+
     private function mediaDisk(): string
     {
         return (string) config('filesystems.media', 'public');
@@ -48,12 +50,21 @@ class KelolaInformasiController extends Controller
     private function getSections()
     {
         return KelolaInformasi::query()
+            ->where('key', '!=', self::BERANDA_VIDEO_URL_KEY)
             ->orderByDesc('created_at')
             ->get();
     }
 
     private function getHomeVideoUrl(): string
     {
+        $videoUrlSetting = KelolaInformasi::query()
+            ->where('key', self::BERANDA_VIDEO_URL_KEY)
+            ->value('description');
+
+        if (is_string($videoUrlSetting) && $videoUrlSetting !== '') {
+            return $videoUrlSetting;
+        }
+
         foreach (['mp4', 'webm', 'ogg', 'mov'] as $extension) {
             $path = 'beranda/video-profil-desa.'.$extension;
 
