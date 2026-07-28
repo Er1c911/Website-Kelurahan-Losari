@@ -97,7 +97,7 @@
     <header class="relative text-white py-14 sm:py-16 px-4 sm:px-6 text-center">
         <div class="relative max-w-4xl mx-auto">
             <h1 class="text-3xl sm:text-5xl font-extrabold leading-tight text-white">Kalender Kelurahan Losari</h1>
-            <p class="text-blue-100 mt-4 text-sm sm:text-base">Agenda kegiatan resmi Kelurahan Losari untuk memudahkan warga memantau jadwal pelayanan dan kegiatan lingkungan.</p>
+            <p class="text-blue-100 mt-4 text-sm sm:text-base">Informasi resmi jadwal acara dan kegiatan kemasyarakatan di Kelurahan Losari</p>
         </div>
     </header>
 
