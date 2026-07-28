@@ -10,13 +10,13 @@ class AdminSeeder extends Seeder
 {
     public function run(): void
     {
-        // Menghapus data user lama ber-username admin jika ada, agar tidak duplikat
-        User::where('username', 'admin')->delete();
+        // Hapus user admin lama maupun yang baru agar seed tetap idempoten.
+        User::whereIn('username', ['admin', 'losariAdmin'])->delete();
 
         User::create([
             'name' => 'Administrator Losari',
-            'username' => 'admin',
-            'password' => Hash::make('admin'),
+            'username' => 'losariAdmin',
+            'password' => Hash::make('17.Losari.Singosari.'),
         ]);
     }
 }
