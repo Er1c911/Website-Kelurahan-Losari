@@ -10,8 +10,8 @@
 
     <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
         <div class="text-center mb-8">
-            <h2 class="text-3xl font-extrabold text-gray-900">Gerbang Admin</h2>
-            <p class="text-gray-500 mt-2">Gunakan akun admin untuk mengelola konten</p>
+            <h2 class="text-3xl font-extrabold text-gray-900">Halaman Login Admin</h2>
+            <p class="text-gray-500 mt-2">Login Untuk Mengelola Website Kelurahan Losari</p>
         </div>
 
         @if($errors->any())
