@@ -46,7 +46,7 @@ class AdminKelolaInformasiController extends Controller
                 self::BERANDA_VIDEO_URL_KEY,
                 self::KONTAK_NARAHUBUNG_KEY,
             ])
-            ->select(['id', 'key', 'title', 'description', 'image_path', 'created_at'])
+            ->select(['id', 'key', 'title', 'description', 'image_path', 'image_data', 'created_at'])
             ->orderByDesc('created_at')
             ->paginate(20);
 
@@ -56,7 +56,7 @@ class AdminKelolaInformasiController extends Controller
         if (!empty($informasiIds)) {
             try {
                 $imagesByInformasiId = KelolaInformasiImage::query()
-                    ->select(['id', 'kelola_informasi_id', 'image_path', 'created_at'])
+                    ->select(['id', 'kelola_informasi_id', 'image_path', 'image_data', 'created_at'])
                     ->whereIn('kelola_informasi_id', $informasiIds)
                     ->orderBy('created_at')
                     ->get()
@@ -611,7 +611,7 @@ class AdminKelolaInformasiController extends Controller
         }
 
         $imageData = null;
-        if ($storedPath === null) {
+        if ($storedPath === null || $this->shouldPersistInlineMediaFallback()) {
             $mimeType = $imageFile->getMimeType() ?: 'application/octet-stream';
             $imageData = 'data:'.$mimeType.';base64,'.base64_encode((string) $imageFile->get());
         }
@@ -652,42 +652,28 @@ class AdminKelolaInformasiController extends Controller
         return $items->map(function (PotensiKelurahanItem $item) use ($disk, $imagesByPotensiId) {
             $resolvedImages = collect($imagesByPotensiId->get($item->id, []))
                 ->map(function (PotensiKelurahanImage $image) use ($disk) {
-                    if (is_string($image->image_data) && trim($image->image_data) !== '') {
-                        return [
-                            'id' => $image->id,
-                            'source' => $image->image_data,
-                        ];
-                    }
+                    $source = $this->resolveImageSource($disk, $image->image_path, $image->image_data);
 
-                    $imagePath = is_string($image->image_path) ? trim($image->image_path) : '';
-
-                    if ($imagePath === '') {
+                    if ($source === null) {
                         return null;
                     }
 
                     return [
                         'id' => $image->id,
-                        'source' => $disk->url($imagePath),
+                        'source' => $source,
                     ];
                 })
                 ->filter()
                 ->values();
 
             if ($resolvedImages->isEmpty()) {
-                if (is_string($item->image_data) && trim($item->image_data) !== '') {
+                $legacySource = $this->resolveImageSource($disk, $item->image_path, $item->image_data);
+
+                if ($legacySource !== null) {
                     $resolvedImages->push([
                         'id' => null,
-                        'source' => $item->image_data,
+                        'source' => $legacySource,
                     ]);
-                } else {
-                    $legacyPath = is_string($item->image_path) ? trim($item->image_path) : '';
-
-                    if ($legacyPath !== '') {
-                        $resolvedImages->push([
-                            'id' => null,
-                            'source' => $disk->url($legacyPath),
-                        ]);
-                    }
                 }
             }
 
@@ -905,27 +891,27 @@ class AdminKelolaInformasiController extends Controller
 
             $resolvedImages = collect($imagesByInformasiId->get($item->id, []))
                 ->map(function (KelolaInformasiImage $image) use ($disk) {
-                    $imagePath = is_string($image->image_path) ? trim($image->image_path) : '';
+                    $source = $this->resolveImageSource($disk, $image->image_path, $image->image_data);
 
-                    if ($imagePath === '') {
+                    if ($source === null) {
                         return null;
                     }
 
                     return [
                         'id' => $image->id,
-                        'source' => $disk->url($imagePath),
+                        'source' => $source,
                     ];
                 })
                 ->filter()
                 ->values();
 
             if ($resolvedImages->isEmpty()) {
-                $legacyPath = is_string($item->image_path) ? trim($item->image_path) : '';
+                $legacySource = $this->resolveImageSource($disk, $item->image_path, $item->image_data);
 
-                if ($legacyPath !== '') {
+                if ($legacySource !== null) {
                     $resolvedImages->push([
                         'id' => null,
-                        'source' => $disk->url($legacyPath),
+                        'source' => $legacySource,
                     ]);
                 }
             }
@@ -955,7 +941,7 @@ class AdminKelolaInformasiController extends Controller
         }
 
         $imageData = null;
-        if ($storedPath === null) {
+        if ($storedPath === null || $this->shouldPersistInlineMediaFallback()) {
             $mimeType = $imageFile->getMimeType() ?: 'application/octet-stream';
             $imageData = 'data:'.$mimeType.';base64,'.base64_encode((string) $imageFile->get());
         }
@@ -978,6 +964,29 @@ class AdminKelolaInformasiController extends Controller
         }
 
         return null;
+    }
+
+    private function shouldPersistInlineMediaFallback(): bool
+    {
+        return (bool) env('VERCEL') && in_array($this->mediaDisk(), ['local', 'public'], true);
+    }
+
+    private function resolveImageSource($disk, $imagePath, $imageData): ?string
+    {
+        $imageDataValue = is_string($imageData) ? trim($imageData) : '';
+        $imagePathValue = is_string($imagePath) ? trim($imagePath) : '';
+
+        if ($imagePathValue !== '') {
+            try {
+                if ($disk->exists($imagePathValue)) {
+                    return $disk->url($imagePathValue);
+                }
+            } catch (Throwable $exception) {
+                // Fall back to inline image data when storage is unavailable on serverless.
+            }
+        }
+
+        return $imageDataValue !== '' ? $imageDataValue : null;
     }
 
     private function normalizeVideoUrl(string $url): string

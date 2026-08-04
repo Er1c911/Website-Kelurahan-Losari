@@ -90,7 +90,7 @@ class KelolaInformasiController extends Controller
                 self::BERANDA_VIDEO_URL_KEY,
                 self::KONTAK_NARAHUBUNG_KEY,
             ])
-            ->select(['id', 'title', 'description', 'image_path'])
+            ->select(['id', 'title', 'description', 'image_path', 'image_data'])
             ->orderByDesc('created_at')
             ->get();
 
@@ -100,7 +100,7 @@ class KelolaInformasiController extends Controller
         if (!empty($sectionIds)) {
             try {
                 $imagesBySectionId = KelolaInformasiImage::query()
-                    ->select(['id', 'kelola_informasi_id', 'image_path', 'created_at'])
+                    ->select(['id', 'kelola_informasi_id', 'image_path', 'image_data', 'created_at'])
                     ->whereIn('kelola_informasi_id', $sectionIds)
                     ->orderBy('created_at')
                     ->get()
@@ -118,22 +118,16 @@ class KelolaInformasiController extends Controller
         return $sections->map(function (KelolaInformasi $section) use ($disk, $imagesBySectionId) {
             $resolvedImages = collect($imagesBySectionId->get($section->id, []))
                 ->map(function (KelolaInformasiImage $image) use ($disk) {
-                    $imagePath = is_string($image->image_path) ? trim($image->image_path) : '';
-
-                    if ($imagePath === '') {
-                        return null;
-                    }
-
-                    return $disk->url($imagePath);
+                    return $this->resolveImageSource($disk, $image->image_path, $image->image_data);
                 })
                 ->filter()
                 ->values();
 
             if ($resolvedImages->isEmpty()) {
-                $legacyPath = is_string($section->image_path) ? trim($section->image_path) : '';
+                $legacySource = $this->resolveImageSource($disk, $section->image_path, $section->image_data);
 
-                if ($legacyPath !== '') {
-                    $resolvedImages->push($disk->url($legacyPath));
+                if ($legacySource !== null) {
+                    $resolvedImages->push($legacySource);
                 }
             }
 
@@ -165,26 +159,16 @@ class KelolaInformasiController extends Controller
         return $items->map(function (PotensiKelurahanItem $item) use ($disk, $imagesByPotensiId) {
             $resolvedImages = collect($imagesByPotensiId->get($item->id, []))
                 ->map(function (PotensiKelurahanImage $image) use ($disk) {
-                    if (is_string($image->image_data) && trim($image->image_data) !== '') {
-                        return $image->image_data;
-                    }
-
-                    $imagePath = is_string($image->image_path) ? trim($image->image_path) : '';
-
-                    return $imagePath !== '' ? $disk->url($imagePath) : null;
+                    return $this->resolveImageSource($disk, $image->image_path, $image->image_data);
                 })
                 ->filter()
                 ->values();
 
             if ($resolvedImages->isEmpty()) {
-                if (is_string($item->image_data) && trim($item->image_data) !== '') {
-                    $resolvedImages->push($item->image_data);
-                } else {
-                    $legacyPath = is_string($item->image_path) ? trim($item->image_path) : '';
+                $legacySource = $this->resolveImageSource($disk, $item->image_path, $item->image_data);
 
-                    if ($legacyPath !== '') {
-                        $resolvedImages->push($disk->url($legacyPath));
-                    }
+                if ($legacySource !== null) {
+                    $resolvedImages->push($legacySource);
                 }
             }
 
@@ -293,6 +277,24 @@ class KelolaInformasiController extends Controller
         $trimmed = trim($value);
 
         return $trimmed === '' ? $fallback : $trimmed;
+    }
+
+    private function resolveImageSource($disk, $imagePath, $imageData): ?string
+    {
+        $imageDataValue = is_string($imageData) ? trim($imageData) : '';
+        $imagePathValue = is_string($imagePath) ? trim($imagePath) : '';
+
+        if ($imagePathValue !== '') {
+            try {
+                if ($disk->exists($imagePathValue)) {
+                    return $disk->url($imagePathValue);
+                }
+            } catch (\Throwable $exception) {
+                // Fall back to inline image data when storage is unavailable on serverless.
+            }
+        }
+
+        return $imageDataValue !== '' ? $imageDataValue : null;
     }
 
 }
