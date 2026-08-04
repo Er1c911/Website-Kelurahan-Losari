@@ -652,7 +652,13 @@ class AdminKelolaInformasiController extends Controller
         return $items->map(function (PotensiKelurahanItem $item) use ($disk, $imagesByPotensiId) {
             $resolvedImages = collect($imagesByPotensiId->get($item->id, []))
                 ->map(function (PotensiKelurahanImage $image) use ($disk) {
-                    $source = $this->resolveImageSource($disk, $image->image_path, $image->image_data);
+                    $source = $this->resolveImageSource(
+                        $disk,
+                        $image->image_path,
+                        is_string($image->image_data) && trim($image->image_data) !== ''
+                            ? route('potensi.image', ['image' => $image])
+                            : null
+                    );
 
                     if ($source === null) {
                         return null;
@@ -667,7 +673,13 @@ class AdminKelolaInformasiController extends Controller
                 ->values();
 
             if ($resolvedImages->isEmpty()) {
-                $legacySource = $this->resolveImageSource($disk, $item->image_path, $item->image_data);
+                $legacySource = $this->resolveImageSource(
+                    $disk,
+                    $item->image_path,
+                    is_string($item->image_data) && trim($item->image_data) !== ''
+                        ? route('potensi.legacy-image', ['potensi' => $item])
+                        : null
+                );
 
                 if ($legacySource !== null) {
                     $resolvedImages->push([
@@ -891,7 +903,13 @@ class AdminKelolaInformasiController extends Controller
 
             $resolvedImages = collect($imagesByInformasiId->get($item->id, []))
                 ->map(function (KelolaInformasiImage $image) use ($disk) {
-                    $source = $this->resolveImageSource($disk, $image->image_path, $image->image_data);
+                    $source = $this->resolveImageSource(
+                        $disk,
+                        $image->image_path,
+                        is_string($image->image_data) && trim($image->image_data) !== ''
+                            ? route('informasi.image', ['image' => $image])
+                            : null
+                    );
 
                     if ($source === null) {
                         return null;
@@ -906,7 +924,13 @@ class AdminKelolaInformasiController extends Controller
                 ->values();
 
             if ($resolvedImages->isEmpty()) {
-                $legacySource = $this->resolveImageSource($disk, $item->image_path, $item->image_data);
+                $legacySource = $this->resolveImageSource(
+                    $disk,
+                    $item->image_path,
+                    is_string($item->image_data) && trim($item->image_data) !== ''
+                        ? route('informasi.legacy-image', ['informasi' => $item])
+                        : null
+                );
 
                 if ($legacySource !== null) {
                     $resolvedImages->push([
@@ -971,9 +995,8 @@ class AdminKelolaInformasiController extends Controller
         return (bool) env('VERCEL') && in_array($this->mediaDisk(), ['local', 'public'], true);
     }
 
-    private function resolveImageSource($disk, $imagePath, $imageData): ?string
+    private function resolveImageSource($disk, $imagePath, ?string $fallbackUrl = null): ?string
     {
-        $imageDataValue = is_string($imageData) ? trim($imageData) : '';
         $imagePathValue = is_string($imagePath) ? trim($imagePath) : '';
 
         if ($imagePathValue !== '') {
@@ -986,7 +1009,7 @@ class AdminKelolaInformasiController extends Controller
             }
         }
 
-        return $imageDataValue !== '' ? $imageDataValue : null;
+        return is_string($fallbackUrl) && trim($fallbackUrl) !== '' ? $fallbackUrl : null;
     }
 
     private function normalizeVideoUrl(string $url): string
