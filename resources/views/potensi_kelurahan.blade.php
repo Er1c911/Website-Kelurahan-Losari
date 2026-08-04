@@ -3,20 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Informasi Desa - Kelurahan Losari</title>
+    <title>Potensi Kelurahan - Kelurahan Losari</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
-        :root {
-            --losari-blue: #0f2f5f;
-            --losari-blue-soft: #dbeafe;
-            --losari-orange: #f97316;
-            --losari-sand: #fff7ed;
-            --losari-bg: #f5f8fc;
-        }
-
         html,
         body {
             min-height: 100%;
@@ -31,8 +23,8 @@
             background-attachment: fixed;
         }
 
-        .card-reveal {
-            animation: revealUp 0.45s ease-out;
+        .fade-up {
+            animation: fadeUp 0.45s ease-out;
         }
 
         .title-strong {
@@ -60,7 +52,7 @@
             opacity: 1;
         }
 
-        @keyframes revealUp {
+        @keyframes fadeUp {
             from {
                 opacity: 0;
                 transform: translateY(10px);
@@ -73,7 +65,6 @@
     </style>
 </head>
 <body class="text-gray-800">
-
     <nav class="bg-white/90 backdrop-blur-md shadow-md sticky top-0 z-50 border-b border-white/60">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
             <a href="{{ route('home') }}" class="flex items-center gap-3 text-xl sm:text-2xl font-bold text-orange-600 hover:opacity-90 transition">
@@ -101,48 +92,50 @@
     </nav>
 
     <header class="relative text-white py-14 sm:py-16 px-4 sm:px-6 text-center">
-        <div class="relative max-w-4xl mx-auto">
-            <h1 class="text-3xl sm:text-5xl font-extrabold leading-tight text-white">Informasi Kelurahan Losari</h1>
+        <div class="relative max-w-4xl mx-auto fade-up">
+            <h1 class="text-3xl sm:text-5xl font-extrabold leading-tight text-white">Potensi Kelurahan Losari</h1>
             <p class="text-blue-100 mt-4 text-sm sm:text-base">
-                Akses mudah informasi profil, layanan publik, kegiatan, dan pembaruan terkini Kelurahan Losari.
+                Gambaran sektor unggulan dan peluang pengembangan ekonomi, kreativitas, dan kolaborasi warga di Kelurahan Losari.
             </p>
         </div>
     </header>
 
-    <main id="informasi" class="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
-        <div class="grid grid-cols-1 gap-8 sm:gap-10">
-            @forelse ($sections as $section)
-                <article class="card-reveal relative bg-slate-50 rounded-3xl shadow-[0_12px_40px_rgba(15,47,95,0.12)] hover:-translate-y-1 hover:shadow-[0_20px_50px_rgba(15,47,95,0.18)] hover:border-slate-300 transition-all duration-300 overflow-hidden border border-slate-200/70">
-                    <div class="flex flex-col lg:flex-row min-h-[320px]">
-                        @if (!empty($section->image_source))
-                            <div class="w-full lg:w-2/5 min-h-[240px] lg:min-h-[320px] overflow-hidden bg-slate-100">
-                                @if (($section->image_sources ?? collect())->count() > 1)
-                                    <div class="slider-frame" data-slider data-interval="5000">
-                                        @foreach ($section->image_sources as $imageSource)
-                                            <img src="{{ $imageSource }}" alt="{{ $section->title }}" class="slider-image {{ $loop->first ? 'is-active' : '' }}" data-slider-image>
-                                        @endforeach
-                                    </div>
-                                @else
-                                    <img src="{{ $section->image_source }}" alt="{{ $section->title }}" class="w-full h-full object-cover">
-                                @endif
-                            </div>
-                        @endif
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 pb-16">
+        @if (($items ?? collect())->isNotEmpty())
+            <div class="grid grid-cols-1 gap-8 sm:gap-10">
+                @foreach ($items as $item)
+                    <article class="fade-up relative bg-slate-50 rounded-3xl shadow-[0_12px_40px_rgba(15,47,95,0.12)] hover:-translate-y-1 hover:shadow-[0_20px_50px_rgba(15,47,95,0.18)] hover:border-slate-300 transition-all duration-300 overflow-hidden border border-slate-200/70">
+                        <div class="flex flex-col lg:flex-row min-h-[320px]">
+                            @if (($item->image_sources ?? collect())->isNotEmpty())
+                                <div class="w-full lg:w-2/5 min-h-[240px] lg:min-h-[320px] overflow-hidden bg-slate-100">
+                                    @if (($item->image_sources ?? collect())->count() > 1)
+                                        <div class="slider-frame" data-slider data-interval="5000">
+                                            @foreach ($item->image_sources as $imageSource)
+                                                <img src="{{ $imageSource }}" alt="{{ $item->title }}" class="slider-image {{ $loop->first ? 'is-active' : '' }}" data-slider-image>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <img src="{{ $item->image_source }}" alt="{{ $item->title }}" class="w-full h-full object-cover">
+                                    @endif
+                                </div>
+                            @endif
 
-                        <div class="p-7 sm:p-9 lg:w-3/5 flex flex-col justify-start">
-                            <h2 class="title-strong text-2xl sm:text-3xl font-extrabold mb-4 leading-tight">{{ $section->title }}</h2>
-                            <p class="text-gray-600 leading-relaxed text-sm sm:text-base">
-                                {{ $section->description }}
-                            </p>
+                            <div class="p-7 sm:p-9 lg:w-3/5 flex flex-col justify-start">
+                                <h2 class="title-strong text-2xl sm:text-3xl font-extrabold mb-4 leading-tight">{{ $item->title }}</h2>
+                                <p class="text-gray-600 leading-relaxed text-sm sm:text-base">
+                                    {{ $item->description ?: 'Deskripsi potensi belum tersedia.' }}
+                                </p>
+                            </div>
                         </div>
-                    </div>
-                </article>
-            @empty
-                <div class="bg-white border border-orange-100 rounded-2xl p-8 text-center shadow-sm">
-                    <h2 class="title-strong text-xl font-bold mb-2">Informasi Belum Tersedia</h2>
-                    <p class="text-gray-600">Data informasi desa akan ditampilkan setelah admin melakukan pembaruan konten.</p>
-                </div>
-            @endforelse
-        </div>
+                    </article>
+                @endforeach
+            </div>
+        @else
+            <div class="bg-white border border-orange-100 rounded-2xl p-8 text-center shadow-sm">
+                <h2 class="title-strong text-xl font-bold mb-2">Potensi Belum Diisi</h2>
+                <p class="text-gray-600">Admin belum menambahkan data potensi kelurahan. Silakan cek kembali nanti.</p>
+            </div>
+        @endif
     </main>
 
     <footer id="kontak" class="bg-gray-900 text-gray-400 py-5 text-center border-t border-gray-800">
@@ -174,6 +167,5 @@
             }, interval);
         });
     </script>
-
 </body>
 </html>

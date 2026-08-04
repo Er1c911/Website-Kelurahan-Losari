@@ -5,21 +5,20 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class KelolaInformasi extends Model
+class PotensiKelurahanItem extends Model
 {
-    protected $table = 'kelola_informasi';
+    protected $table = 'potensi_kelurahan_items';
 
     protected $fillable = [
-        'key',
         'title',
         'description',
         'image_path',
         'image_data',
+        'sort_order',
     ];
 
     public function images(): HasMany
     {
-        return $this->hasMany(KelolaInformasiImage::class, 'kelola_informasi_id');
+        return $this->hasMany(PotensiKelurahanImage::class, 'potensi_kelurahan_item_id');
     }
 }
-

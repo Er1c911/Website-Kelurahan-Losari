@@ -43,7 +43,7 @@
                             <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12ZM12 6.75a.75.75 0 0 1 .75.75v.008a.75.75 0 0 1-1.5 0V7.5a.75.75 0 0 1 .75-.75Zm0 4.5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0V12a.75.75 0 0 1 .75-.75Z" clip-rule="evenodd" />
                         </svg>
                     </span>
-                    <span>Kelola Informasi Desa</span>
+                    <span>Kelola Informasi Kelurahan</span>
                 </a>
 
                 <a href="{{ route('admin.kelola-kalender.manage') }}"
@@ -76,6 +76,27 @@
                         </svg>
                     </span>
                     <span>Kelola UMKM</span>
+                </a>
+
+                <a href="{{ route('admin.kelola-potensi.manage') }}"
+                         class="inline-flex w-full items-center gap-3 bg-gradient-to-r from-rose-600 to-orange-500 hover:from-rose-700 hover:to-orange-600 text-white font-bold text-base sm:text-lg px-4 sm:px-6 py-4 rounded-2xl shadow-lg hover:shadow-xl ring-1 ring-rose-300/60 transition-all duration-300 text-left">
+                    <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/20" aria-hidden="true">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-5 w-5 text-white">
+                            <path d="M12 2.25a.75.75 0 0 1 .75.75v2.25h2.25a.75.75 0 0 1 0 1.5H12.75V9h2.25a.75.75 0 0 1 0 1.5H12.75v2.25a.75.75 0 0 1-1.5 0V10.5H9a.75.75 0 0 1 0-1.5h2.25V6.75H9a.75.75 0 0 1 0-1.5h2.25V3a.75.75 0 0 1 .75-.75Z" />
+                            <path fill-rule="evenodd" d="M4.5 7.5A2.25 2.25 0 0 1 6.75 5.25h10.5A2.25 2.25 0 0 1 19.5 7.5v9A2.25 2.25 0 0 1 17.25 18.75H6.75A2.25 2.25 0 0 1 4.5 16.5v-9ZM6.75 6.75a.75.75 0 0 0-.75.75v9c0 .414.336.75.75.75h10.5a.75.75 0 0 0 .75-.75v-9a.75.75 0 0 0-.75-.75H6.75Z" clip-rule="evenodd" />
+                        </svg>
+                    </span>
+                    <span>Kelola Potensi Kelurahan</span>
+                </a>
+
+                <a href="{{ route('admin.kelola-kontak.manage') }}"
+                         class="inline-flex w-full items-center gap-3 bg-gradient-to-r from-cyan-600 to-blue-500 hover:from-cyan-700 hover:to-blue-600 text-white font-bold text-base sm:text-lg px-4 sm:px-6 py-4 rounded-2xl shadow-lg hover:shadow-xl ring-1 ring-cyan-300/60 transition-all duration-300 text-left">
+                    <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/20" aria-hidden="true">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-5 w-5 text-white">
+                            <path fill-rule="evenodd" d="M3 5.25A2.25 2.25 0 0 1 5.25 3h13.5A2.25 2.25 0 0 1 21 5.25v13.5A2.25 2.25 0 0 1 18.75 21H5.25A2.25 2.25 0 0 1 3 18.75V5.25ZM6.75 7.5a.75.75 0 0 0 0 1.5h10.5a.75.75 0 0 0 0-1.5H6.75Zm0 4.5a.75.75 0 0 0 0 1.5h5.25a.75.75 0 0 0 0-1.5H6.75Zm0 4.5a.75.75 0 0 0 0 1.5h7.5a.75.75 0 0 0 0-1.5h-7.5Z" clip-rule="evenodd" />
+                        </svg>
+                    </span>
+                    <span>Kelola Kontak (Narahubung)</span>
                 </a>
 
 

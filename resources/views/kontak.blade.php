@@ -3,20 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Informasi Desa - Kelurahan Losari</title>
+    <title>Kontak Narahubung - Kelurahan Losari</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
-        :root {
-            --losari-blue: #0f2f5f;
-            --losari-blue-soft: #dbeafe;
-            --losari-orange: #f97316;
-            --losari-sand: #fff7ed;
-            --losari-bg: #f5f8fc;
-        }
-
         html,
         body {
             min-height: 100%;
@@ -31,33 +23,8 @@
             background-attachment: fixed;
         }
 
-        .card-reveal {
+        .reveal-up {
             animation: revealUp 0.45s ease-out;
-        }
-
-        .title-strong {
-            color: #0b1f3a;
-            text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
-        }
-
-        .slider-frame {
-            position: relative;
-            width: 100%;
-            height: 100%;
-        }
-
-        .slider-image {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            opacity: 0;
-            transition: opacity 0.6s ease;
-        }
-
-        .slider-image.is-active {
-            opacity: 1;
         }
 
         @keyframes revealUp {
@@ -73,7 +40,6 @@
     </style>
 </head>
 <body class="text-gray-800">
-
     <nav class="bg-white/90 backdrop-blur-md shadow-md sticky top-0 z-50 border-b border-white/60">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
             <a href="{{ route('home') }}" class="flex items-center gap-3 text-xl sm:text-2xl font-bold text-orange-600 hover:opacity-90 transition">
@@ -101,48 +67,57 @@
     </nav>
 
     <header class="relative text-white py-14 sm:py-16 px-4 sm:px-6 text-center">
-        <div class="relative max-w-4xl mx-auto">
-            <h1 class="text-3xl sm:text-5xl font-extrabold leading-tight text-white">Informasi Kelurahan Losari</h1>
+        <div class="relative max-w-4xl mx-auto reveal-up">
+            <h1 class="text-3xl sm:text-5xl font-extrabold leading-tight text-white">Hubungi Kami</h1>
             <p class="text-blue-100 mt-4 text-sm sm:text-base">
-                Akses mudah informasi profil, layanan publik, kegiatan, dan pembaruan terkini Kelurahan Losari.
+                Silakan hubungi narahubung resmi untuk informasi layanan, administrasi, dan kegiatan Kelurahan Losari.
             </p>
         </div>
     </header>
 
-    <main id="informasi" class="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
-        <div class="grid grid-cols-1 gap-8 sm:gap-10">
-            @forelse ($sections as $section)
-                <article class="card-reveal relative bg-slate-50 rounded-3xl shadow-[0_12px_40px_rgba(15,47,95,0.12)] hover:-translate-y-1 hover:shadow-[0_20px_50px_rgba(15,47,95,0.18)] hover:border-slate-300 transition-all duration-300 overflow-hidden border border-slate-200/70">
-                    <div class="flex flex-col lg:flex-row min-h-[320px]">
-                        @if (!empty($section->image_source))
-                            <div class="w-full lg:w-2/5 min-h-[240px] lg:min-h-[320px] overflow-hidden bg-slate-100">
-                                @if (($section->image_sources ?? collect())->count() > 1)
-                                    <div class="slider-frame" data-slider data-interval="5000">
-                                        @foreach ($section->image_sources as $imageSource)
-                                            <img src="{{ $imageSource }}" alt="{{ $section->title }}" class="slider-image {{ $loop->first ? 'is-active' : '' }}" data-slider-image>
-                                        @endforeach
-                                    </div>
-                                @else
-                                    <img src="{{ $section->image_source }}" alt="{{ $section->title }}" class="w-full h-full object-cover">
-                                @endif
-                            </div>
-                        @endif
-
-                        <div class="p-7 sm:p-9 lg:w-3/5 flex flex-col justify-start">
-                            <h2 class="title-strong text-2xl sm:text-3xl font-extrabold mb-4 leading-tight">{{ $section->title }}</h2>
-                            <p class="text-gray-600 leading-relaxed text-sm sm:text-base">
-                                {{ $section->description }}
-                            </p>
-                        </div>
-                    </div>
-                </article>
-            @empty
-                <div class="bg-white border border-orange-100 rounded-2xl p-8 text-center shadow-sm">
-                    <h2 class="title-strong text-xl font-bold mb-2">Informasi Belum Tersedia</h2>
-                    <p class="text-gray-600">Data informasi desa akan ditampilkan setelah admin melakukan pembaruan konten.</p>
+    <main id="narahubung" class="max-w-7xl mx-auto px-4 sm:px-6 pb-16">
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+            <article class="reveal-up bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-[0_12px_30px_rgba(15,47,95,0.12)]">
+                <h2 class="text-2xl font-extrabold text-blue-900 mb-4">Kantor Kelurahan</h2>
+                <div class="space-y-3 text-sm sm:text-base text-gray-700">
+                    <p><span class="font-semibold text-gray-900">Alamat:</span> {{ $kontak['office_address'] }}</p>
+                    <p><span class="font-semibold text-gray-900">Jam Pelayanan:</span> {{ $kontak['service_hours'] }}</p>
+                    <p><span class="font-semibold text-gray-900">Layanan Umum:</span> {{ $kontak['service_info'] }}</p>
                 </div>
-            @endforelse
-        </div>
+            </article>
+
+            <article class="reveal-up bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-[0_12px_30px_rgba(15,47,95,0.12)]">
+                <h2 class="text-2xl font-extrabold text-blue-900 mb-4">Narahubung Resmi</h2>
+                <div class="space-y-4 text-sm sm:text-base text-gray-700">
+                    <div>
+                        <p class="font-semibold text-gray-900">Email Resmi</p>
+                        <p>{{ $kontak['email'] !== '' ? $kontak['email'] : 'Silakan datang langsung ke kantor kelurahan untuk informasi email resmi terbaru.' }}</p>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-gray-900">Telepon</p>
+                        <p>{{ $kontak['phone_whatsapp'] !== '' ? $kontak['phone_whatsapp'] : 'Silakan datang langsung ke kantor kelurahan untuk informasi nomor narahubung terbaru.' }}</p>
+                    </div>
+                </div>
+            </article>
+        </section>
+
+        <section class="mt-6 sm:mt-8 flex justify-center">
+            <article class="reveal-up w-full max-w-md bg-gradient-to-r from-green-700 to-emerald-800 rounded-2xl border border-green-700/70 p-5 sm:p-6 shadow-[0_12px_30px_rgba(6,78,59,0.35)] text-white text-center">
+                <h2 class="text-xl sm:text-2xl font-extrabold mb-2">Layanan Cepat via Whatsapp</h2>
+                
+                @if (!empty($kontak['whatsapp_link']))
+                    <a href="{{ $kontak['whatsapp_link'] }}" target="_blank" rel="noopener noreferrer"
+                       class="inline-flex items-center gap-2 rounded-lg bg-white text-green-700 hover:bg-green-50 font-bold px-4 py-2.5 transition mx-auto">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" fill="currentColor" class="h-4 w-4" aria-hidden="true">
+                            <path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3 18.7-68.1-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z" />
+                        </svg>
+                        Chat via WhatsApp
+                    </a>
+                @else
+                    <p class="text-sm sm:text-base text-green-100">Link WhatsApp belum tersedia. Silakan hubungi melalui kontak kantor terlebih dahulu.</p>
+                @endif
+            </article>
+        </section>
     </main>
 
     <footer id="kontak" class="bg-gray-900 text-gray-400 py-5 text-center border-t border-gray-800">
@@ -155,25 +130,5 @@
             <p class="text-sm">&copy; 2026 Website Kelurahan Losari.</p>
         </div>
     </footer>
-
-    <script>
-        document.querySelectorAll('[data-slider]').forEach(function (slider) {
-            const images = Array.from(slider.querySelectorAll('[data-slider-image]'));
-
-            if (images.length <= 1) {
-                return;
-            }
-
-            const interval = Number(slider.getAttribute('data-interval') || 5000);
-            let index = 0;
-
-            setInterval(function () {
-                images[index].classList.remove('is-active');
-                index = (index + 1) % images.length;
-                images[index].classList.add('is-active');
-            }, interval);
-        });
-    </script>
-
 </body>
 </html>

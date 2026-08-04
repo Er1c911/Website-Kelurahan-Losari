@@ -88,7 +88,9 @@
                     <a href="{{ route('home') }}" class="block px-3 py-2 rounded-lg transition {{ request()->routeIs('home') ? 'bg-orange-100 text-orange-700 font-semibold' : 'text-gray-700 hover:bg-orange-50 hover:text-orange-700' }}">Beranda</a>
                     <a href="{{ route('informasi-desa') }}" class="block px-3 py-2 rounded-lg transition {{ request()->routeIs('informasi-desa') ? 'bg-orange-100 text-orange-700 font-semibold' : 'text-gray-700 hover:bg-orange-50 hover:text-orange-700' }}">Informasi Kelurahan Losari</a>
                     <a href="{{ route('umkm') }}" class="block px-3 py-2 rounded-lg transition {{ request()->routeIs('umkm') ? 'bg-orange-100 text-orange-700 font-semibold' : 'text-gray-700 hover:bg-orange-50 hover:text-orange-700' }}">UMKM</a>
+                    <a href="{{ route('potensi-kelurahan') }}" class="block px-3 py-2 rounded-lg transition {{ request()->routeIs('potensi-kelurahan') ? 'bg-orange-100 text-orange-700 font-semibold' : 'text-gray-700 hover:bg-orange-50 hover:text-orange-700' }}">Potensi Kelurahan</a>
                     <a href="{{ route('kalender-desa') }}" class="block px-3 py-2 rounded-lg transition {{ request()->routeIs('kalender-desa') ? 'bg-orange-100 text-orange-700 font-semibold' : 'text-gray-700 hover:bg-orange-50 hover:text-orange-700' }}">Kalender Kelurahan Losari</a>
+                    <a href="{{ route('kontak') }}" class="block px-3 py-2 rounded-lg transition {{ request()->routeIs('kontak') ? 'bg-orange-100 text-orange-700 font-semibold' : 'text-gray-700 hover:bg-orange-50 hover:text-orange-700' }}">Kontak (Narahubung)</a>
                 </div>
             </details>
         </div>

@@ -4,9 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\AgendaKalender;
 use App\Models\KelolaInformasi;
+use App\Models\KelolaInformasiImage;
+use App\Models\PotensiKelurahanImage;
+use App\Models\PotensiKelurahanItem;
 use App\Models\Umkm;
 use App\Models\UmkmMenuImage;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -19,6 +24,8 @@ class AdminKelolaInformasiController extends Controller
     private const BERANDA_VIDEO_BASENAME = 'video-profil-desa';
 
     private const BERANDA_VIDEO_URL_KEY = '__beranda_video_url__';
+
+    private const KONTAK_NARAHUBUNG_KEY = '__kontak_narahubung__';
 
     private function mediaDisk(): string
     {
@@ -35,9 +42,31 @@ class AdminKelolaInformasiController extends Controller
     public function manage()
     {
         $informasi = KelolaInformasi::query()
-            ->where('key', '!=', self::BERANDA_VIDEO_URL_KEY)
+            ->whereNotIn('key', [
+                self::BERANDA_VIDEO_URL_KEY,
+                self::KONTAK_NARAHUBUNG_KEY,
+            ])
+            ->select(['id', 'key', 'title', 'description', 'image_path', 'created_at'])
             ->orderByDesc('created_at')
-            ->get();
+            ->paginate(20);
+
+        $imagesByInformasiId = collect();
+        $informasiIds = $informasi->getCollection()->pluck('id')->all();
+
+        if (!empty($informasiIds)) {
+            try {
+                $imagesByInformasiId = KelolaInformasiImage::query()
+                    ->select(['id', 'kelola_informasi_id', 'image_path', 'created_at'])
+                    ->whereIn('kelola_informasi_id', $informasiIds)
+                    ->orderBy('created_at')
+                    ->get()
+                    ->groupBy('kelola_informasi_id');
+            } catch (Throwable $exception) {
+                $imagesByInformasiId = collect();
+            }
+        }
+
+        $informasi = $this->attachInformasiImageSources($informasi, $imagesByInformasiId);
 
         return view('admin.kelola_informasi', [
             'informasi' => $informasi,
@@ -86,6 +115,60 @@ class AdminKelolaInformasiController extends Controller
         return view('admin.kelola_umkm', [
             'umkms' => $umkms,
         ]);
+    }
+
+    public function managePotensiKelurahan()
+    {
+        $items = PotensiKelurahanItem::query()
+            ->orderBy('sort_order')
+            ->orderByDesc('created_at')
+            ->get();
+
+        $items = $this->attachPotensiImageSources($items);
+
+        return view('admin.kelola_potensi_kelurahan', [
+            'items' => $items,
+        ]);
+    }
+
+    public function manageKontak()
+    {
+        $raw = KelolaInformasi::query()
+            ->where('key', self::KONTAK_NARAHUBUNG_KEY)
+            ->value('description');
+
+        $kontak = $this->normalizeKontakPayload($this->decodeKontakPayload($raw));
+
+        return view('admin.kelola_kontak', [
+            'kontak' => $kontak,
+        ]);
+    }
+
+    public function updateKontak(Request $request)
+    {
+        $validated = $request->validate([
+            'office_address' => ['required', 'string', 'max:255'],
+            'service_hours' => ['required', 'string', 'max:255'],
+            'service_info' => ['required', 'string', 'max:2000'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'phone_whatsapp' => ['nullable', 'string', 'max:255'],
+            'whatsapp_link' => ['nullable', 'url', 'max:255'],
+            'note' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $payload = $this->normalizeKontakPayload($validated);
+
+        KelolaInformasi::query()->updateOrCreate(
+            ['key' => self::KONTAK_NARAHUBUNG_KEY],
+            [
+                'title' => 'Kontak Narahubung',
+                'description' => json_encode($payload, JSON_UNESCAPED_UNICODE),
+                'image_path' => null,
+                'image_data' => null,
+            ]
+        );
+
+        return back()->with('status', 'Data kontak narahubung berhasil diperbarui.');
     }
 
     public function updateBerandaVideo(Request $request)
@@ -197,7 +280,7 @@ class AdminKelolaInformasiController extends Controller
             'description' => ['nullable', 'string', 'max:2000'],
             'contact_name' => ['required', 'string', 'max:255'],
             'whatsapp_link' => ['required', 'url', 'max:255'],
-            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp'],
         ]);
 
         $data = [
@@ -241,7 +324,7 @@ class AdminKelolaInformasiController extends Controller
             'description' => ['nullable', 'string', 'max:2000'],
             'contact_name' => ['required', 'string', 'max:255'],
             'whatsapp_link' => ['required', 'url', 'max:255'],
-            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp'],
         ]);
 
         $umkm->name = $validated['name'];
@@ -300,7 +383,7 @@ class AdminKelolaInformasiController extends Controller
     public function storeUmkmMenuImages(Request $request, Umkm $umkm)
     {
         $validated = $request->validate([
-            'menu_images.*' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+            'menu_images.*' => ['required', 'image', 'mimes:jpg,jpeg,png,webp'],
         ]);
 
         if ($request->hasFile('menu_images')) {
@@ -340,32 +423,347 @@ class AdminKelolaInformasiController extends Controller
         return back()->with('status', 'Gambar menu berhasil dihapus.');
     }
 
+    public function storePotensiKelurahan(Request $request)
+    {
+        $validated = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:2000'],
+            'images.*' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        $hasImageColumns = $this->hasPotensiImageColumns();
+        $hasImagesTable = $this->hasPotensiImagesTable();
+
+        $imageFiles = collect($request->file('images', []))
+            ->filter(fn ($file) => $file instanceof UploadedFile)
+            ->values();
+
+        if ($imageFiles->isNotEmpty() && ! $hasImageColumns && ! $hasImagesTable) {
+            return back()->withErrors([
+                'images' => 'Struktur gambar potensi belum tersedia di database. Jalankan migrasi terbaru terlebih dahulu.',
+            ])->withInput();
+        }
+
+        if ($imageFiles->isNotEmpty() && ! $hasImagesTable) {
+            return back()->withErrors([
+                'images' => 'Tabel galeri potensi belum tersedia. Jalankan migrasi terbaru terlebih dahulu.',
+            ])->withInput();
+        }
+
+        $data = [
+            'title' => $validated['title'],
+            'description' => $validated['description'] ?? null,
+            'sort_order' => $validated['sort_order'] ?? 0,
+        ];
+
+        if ($hasImageColumns) {
+            $data['image_path'] = null;
+            $data['image_data'] = null;
+        }
+
+        $potensi = PotensiKelurahanItem::create($data);
+
+        if ($imageFiles->isNotEmpty()) {
+            $firstStoredImage = null;
+
+            foreach ($imageFiles as $imageFile) {
+                $storedImage = $this->storePotensiImage($potensi, $imageFile);
+
+                if ($firstStoredImage === null) {
+                    $firstStoredImage = $storedImage;
+                }
+            }
+
+            if ($hasImageColumns && is_array($firstStoredImage)) {
+                $potensi->image_path = $firstStoredImage['image_path'];
+                $potensi->image_data = $firstStoredImage['image_data'];
+                $potensi->save();
+            }
+        }
+
+        return back()->with('status', 'Potensi kelurahan berhasil ditambahkan.');
+    }
+
+    public function updatePotensiKelurahan(Request $request, PotensiKelurahanItem $potensi)
+    {
+        $validated = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:2000'],
+            'images.*' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        $hasImageColumns = $this->hasPotensiImageColumns();
+        $hasImagesTable = $this->hasPotensiImagesTable();
+
+        $imageFiles = collect($request->file('images', []))
+            ->filter(fn ($file) => $file instanceof UploadedFile)
+            ->values();
+
+        if ($imageFiles->isNotEmpty() && ! $hasImageColumns && ! $hasImagesTable) {
+            return back()->withErrors([
+                'images' => 'Struktur gambar potensi belum tersedia di database. Jalankan migrasi terbaru terlebih dahulu.',
+            ])->withInput();
+        }
+
+        if ($imageFiles->isNotEmpty() && ! $hasImagesTable) {
+            return back()->withErrors([
+                'images' => 'Tabel galeri potensi belum tersedia. Jalankan migrasi terbaru terlebih dahulu.',
+            ])->withInput();
+        }
+
+        $potensi->title = $validated['title'];
+        $potensi->description = $validated['description'] ?? null;
+        $potensi->sort_order = $validated['sort_order'] ?? 0;
+
+        $potensi->save();
+
+        if ($imageFiles->isNotEmpty()) {
+            foreach ($imageFiles as $imageFile) {
+                $this->storePotensiImage($potensi, $imageFile);
+            }
+
+            if ($hasImageColumns) {
+                $latestImage = $potensi->images()->latest('id')->first();
+
+                if ($latestImage instanceof PotensiKelurahanImage) {
+                    $potensi->image_path = $latestImage->image_path;
+                    $potensi->image_data = $latestImage->image_data;
+                    $potensi->save();
+                }
+            }
+        }
+
+        return back()->with('status', 'Potensi kelurahan berhasil diperbarui.');
+    }
+
+    public function destroyPotensiImage(PotensiKelurahanItem $potensi, PotensiKelurahanImage $image)
+    {
+        if (! $this->hasPotensiImagesTable()) {
+            return back()->withErrors([
+                'image' => 'Tabel galeri potensi belum tersedia. Jalankan migrasi terbaru terlebih dahulu.',
+            ]);
+        }
+
+        if ($image->potensi_kelurahan_item_id !== $potensi->id) {
+            abort(404);
+        }
+
+        if (!empty($image->image_path)) {
+            Storage::disk($this->mediaDisk())->delete($image->image_path);
+        }
+
+        $image->delete();
+
+        if ($this->hasPotensiImageColumns()) {
+            $latestImage = $potensi->images()->latest('id')->first();
+
+            $potensi->image_path = $latestImage?->image_path;
+            $potensi->image_data = $latestImage?->image_data;
+            $potensi->save();
+        }
+
+        return back()->with('status', 'Gambar potensi berhasil dihapus.');
+    }
+
+    public function destroyPotensiKelurahan(PotensiKelurahanItem $potensi)
+    {
+        if ($this->hasPotensiImagesTable()) {
+            foreach ($potensi->images as $image) {
+                if (!empty($image->image_path)) {
+                    Storage::disk($this->mediaDisk())->delete($image->image_path);
+                }
+            }
+        }
+
+        if ($this->hasPotensiImageColumns() && !empty($potensi->image_path)) {
+            Storage::disk($this->mediaDisk())->delete($potensi->image_path);
+        }
+
+        $potensi->delete();
+
+        return back()->with('status', 'Potensi kelurahan berhasil dihapus.');
+    }
+
+    private function hasPotensiImageColumns(): bool
+    {
+        return Schema::hasColumn('potensi_kelurahan_items', 'image_path')
+            && Schema::hasColumn('potensi_kelurahan_items', 'image_data');
+    }
+
+    private function hasPotensiImagesTable(): bool
+    {
+        return Schema::hasTable('potensi_kelurahan_images');
+    }
+
+    private function storePotensiImage(PotensiKelurahanItem $potensi, UploadedFile $imageFile): array
+    {
+        $storedPath = null;
+
+        try {
+            $storedPath = $imageFile->store('potensi_kelurahan', $this->mediaDisk());
+            if (!is_string($storedPath) || $storedPath === '') {
+                $storedPath = null;
+            }
+        } catch (Throwable $exception) {
+            $storedPath = null;
+        }
+
+        $imageData = null;
+        if ($storedPath === null) {
+            $mimeType = $imageFile->getMimeType() ?: 'application/octet-stream';
+            $imageData = 'data:'.$mimeType.';base64,'.base64_encode((string) $imageFile->get());
+        }
+
+        if ($this->hasPotensiImagesTable()) {
+            PotensiKelurahanImage::create([
+                'potensi_kelurahan_item_id' => $potensi->id,
+                'image_path' => $storedPath,
+                'image_data' => $imageData,
+            ]);
+        }
+
+        return [
+            'image_path' => $storedPath,
+            'image_data' => $imageData,
+        ];
+    }
+
+    private function attachPotensiImageSources(Collection $items): Collection
+    {
+        $disk = Storage::disk($this->mediaDisk());
+        $hasImagesTable = $this->hasPotensiImagesTable();
+        $imagesByPotensiId = collect();
+
+        if ($hasImagesTable) {
+            $potensiIds = $items->pluck('id')->all();
+
+            if (!empty($potensiIds)) {
+                $imagesByPotensiId = PotensiKelurahanImage::query()
+                    ->select(['id', 'potensi_kelurahan_item_id', 'image_path', 'image_data', 'created_at'])
+                    ->whereIn('potensi_kelurahan_item_id', $potensiIds)
+                    ->orderBy('created_at')
+                    ->get()
+                    ->groupBy('potensi_kelurahan_item_id');
+            }
+        }
+
+        return $items->map(function (PotensiKelurahanItem $item) use ($disk, $imagesByPotensiId) {
+            $resolvedImages = collect($imagesByPotensiId->get($item->id, []))
+                ->map(function (PotensiKelurahanImage $image) use ($disk) {
+                    if (is_string($image->image_data) && trim($image->image_data) !== '') {
+                        return [
+                            'id' => $image->id,
+                            'source' => $image->image_data,
+                        ];
+                    }
+
+                    $imagePath = is_string($image->image_path) ? trim($image->image_path) : '';
+
+                    if ($imagePath === '') {
+                        return null;
+                    }
+
+                    return [
+                        'id' => $image->id,
+                        'source' => $disk->url($imagePath),
+                    ];
+                })
+                ->filter()
+                ->values();
+
+            if ($resolvedImages->isEmpty()) {
+                if (is_string($item->image_data) && trim($item->image_data) !== '') {
+                    $resolvedImages->push([
+                        'id' => null,
+                        'source' => $item->image_data,
+                    ]);
+                } else {
+                    $legacyPath = is_string($item->image_path) ? trim($item->image_path) : '';
+
+                    if ($legacyPath !== '') {
+                        $resolvedImages->push([
+                            'id' => null,
+                            'source' => $disk->url($legacyPath),
+                        ]);
+                    }
+                }
+            }
+
+            $item->image_items = $resolvedImages;
+            $item->image_source = $resolvedImages->first()['source'] ?? null;
+
+            return $item;
+        });
+    }
+
+    private function decodeKontakPayload($raw): array
+    {
+        if (!is_string($raw) || trim($raw) === '') {
+            return [];
+        }
+
+        $decoded = json_decode($raw, true);
+
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    private function normalizeKontakPayload(array $data): array
+    {
+        return [
+            'office_address' => $this->sanitizeKontakValue($data['office_address'] ?? 'Jl. Suropati No. 157 Singosari', 'Jl. Suropati No. 157 Singosari'),
+            'service_hours' => $this->sanitizeKontakValue($data['service_hours'] ?? 'Senin - Jumat, 08.00 - 15.00 WIB', 'Senin - Jumat, 08.00 - 15.00 WIB'),
+            'service_info' => $this->sanitizeKontakValue($data['service_info'] ?? 'Administrasi kependudukan, informasi kegiatan, dan pelayanan warga.', 'Administrasi kependudukan, informasi kegiatan, dan pelayanan warga.'),
+            'email' => $this->sanitizeKontakValue($data['email'] ?? null, ''),
+            'phone_whatsapp' => $this->sanitizeKontakValue($data['phone_whatsapp'] ?? null, ''),
+            'whatsapp_link' => $this->sanitizeKontakValue($data['whatsapp_link'] ?? null, ''),
+            'note' => $this->sanitizeKontakValue($data['note'] ?? 'Untuk layanan cepat, siapkan data identitas dan keperluan sebelum menghubungi petugas.', 'Untuk layanan cepat, siapkan data identitas dan keperluan sebelum menghubungi petugas.'),
+        ];
+    }
+
+    private function sanitizeKontakValue($value, string $fallback): string
+    {
+        if (!is_string($value)) {
+            return $fallback;
+        }
+
+        $trimmed = trim($value);
+
+        return $trimmed === '' ? $fallback : $trimmed;
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
-            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+            'images.*' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp'],
         ]);
 
         $data = [
             'key' => (string) Str::uuid(),
             'title' => $validated['title'],
             'description' => $validated['description'] ?? null,
+            'image_path' => null,
+            'image_data' => null,
         ];
 
-        if ($request->hasFile('image')) {
-            $imageFile = $request->file('image');
-            $mimeType = $imageFile->getMimeType() ?: 'application/octet-stream';
-            $data['image_data'] = 'data:'.$mimeType.';base64,'.base64_encode((string) $imageFile->get());
+        $informasi = KelolaInformasi::create($data);
 
-            $storedPath = $imageFile->store('kelola_informasi', $this->mediaDisk());
-            if (is_string($storedPath) && $storedPath !== '') {
-                $data['image_path'] = $storedPath;
+        if ($request->hasFile('images')) {
+            if (! Schema::hasTable('kelola_informasi_images')) {
+                return back()->withErrors([
+                    'images' => 'Tabel foto informasi belum tersedia. Jalankan migrasi terlebih dahulu.',
+                ])->withInput();
+            }
+
+            foreach ($request->file('images') as $imageFile) {
+                if ($imageFile instanceof UploadedFile) {
+                    $this->storeInformasiImage($informasi, $imageFile);
+                }
             }
         }
-
-        KelolaInformasi::create($data);
 
         return back()->with('status', 'Informasi berhasil ditambahkan.');
     }
@@ -375,34 +773,120 @@ class AdminKelolaInformasiController extends Controller
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
-            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
         ]);
 
         $informasi->title = $validated['title'];
         $informasi->description = $validated['description'] ?? null;
-
-        if ($request->hasFile('image')) {
-            if (!empty($informasi->image_path)) {
-                Storage::disk($this->mediaDisk())->delete($informasi->image_path);
-            }
-
-            $imageFile = $request->file('image');
-            $mimeType = $imageFile->getMimeType() ?: 'application/octet-stream';
-            $informasi->image_data = 'data:'.$mimeType.';base64,'.base64_encode((string) $imageFile->get());
-
-            $path = $imageFile->store('kelola_informasi', $this->mediaDisk());
-            if (is_string($path) && $path !== '') {
-                $informasi->image_path = $path;
-            }
-        }
 
         $informasi->save();
 
         return back()->with('status', 'Informasi berhasil diperbarui.');
     }
 
+    public function storeInformasiImages(Request $request, KelolaInformasi $informasi)
+    {
+        if (! Schema::hasTable('kelola_informasi_images')) {
+            return back()->withErrors([
+                'images' => 'Tabel foto informasi belum tersedia. Jalankan migrasi terlebih dahulu.',
+            ])->withInput();
+        }
+
+        $request->validate([
+            'images.*' => ['required', 'image', 'mimes:jpg,jpeg,png,webp'],
+        ]);
+
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $imageFile) {
+                if ($imageFile instanceof UploadedFile) {
+                    $this->storeInformasiImage($informasi, $imageFile);
+                }
+            }
+        }
+
+        return back()->with('status', 'Foto informasi berhasil ditambahkan.');
+    }
+
+    public function updateInformasiImage(Request $request, KelolaInformasi $informasi, KelolaInformasiImage $image)
+    {
+        if (! Schema::hasTable('kelola_informasi_images')) {
+            return back()->withErrors([
+                'image' => 'Tabel foto informasi belum tersedia. Jalankan migrasi terlebih dahulu.',
+            ])->withInput();
+        }
+
+        if ($image->kelola_informasi_id !== $informasi->id) {
+            abort(404);
+        }
+
+        $request->validate([
+            'image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp'],
+        ]);
+
+        if (!empty($image->image_path)) {
+            Storage::disk($this->mediaDisk())->delete($image->image_path);
+        }
+
+        $newImage = $request->file('image');
+
+        $image->image_path = null;
+        $image->image_data = null;
+
+        if ($newImage instanceof UploadedFile) {
+            $storedPath = null;
+
+            try {
+                $storedPath = $newImage->store('kelola_informasi', $this->mediaDisk());
+                if (!is_string($storedPath) || $storedPath === '') {
+                    $storedPath = null;
+                }
+            } catch (Throwable $exception) {
+                $storedPath = null;
+            }
+
+            $image->image_path = $storedPath;
+
+            if ($storedPath === null) {
+                $mimeType = $newImage->getMimeType() ?: 'application/octet-stream';
+                $image->image_data = 'data:'.$mimeType.';base64,'.base64_encode((string) $newImage->get());
+            }
+        }
+
+        $image->save();
+
+        return back()->with('status', 'Foto informasi berhasil diganti.');
+    }
+
+    public function destroyInformasiImage(KelolaInformasi $informasi, KelolaInformasiImage $image)
+    {
+        if (! Schema::hasTable('kelola_informasi_images')) {
+            return back()->withErrors([
+                'image' => 'Tabel foto informasi belum tersedia. Jalankan migrasi terlebih dahulu.',
+            ]);
+        }
+
+        if ($image->kelola_informasi_id !== $informasi->id) {
+            abort(404);
+        }
+
+        if (!empty($image->image_path)) {
+            Storage::disk($this->mediaDisk())->delete($image->image_path);
+        }
+
+        $image->delete();
+
+        return back()->with('status', 'Foto informasi berhasil dihapus.');
+    }
+
     public function destroy(KelolaInformasi $informasi)
     {
+        if (Schema::hasTable('kelola_informasi_images')) {
+            foreach ($informasi->images as $image) {
+                if (!empty($image->image_path)) {
+                    Storage::disk($this->mediaDisk())->delete($image->image_path);
+                }
+            }
+        }
+
         if (!empty($informasi->image_path)) {
             Storage::disk($this->mediaDisk())->delete($informasi->image_path);
         }
@@ -410,6 +894,77 @@ class AdminKelolaInformasiController extends Controller
         $informasi->delete();
 
         return back()->with('status', 'Informasi berhasil dihapus.');
+    }
+
+    private function attachInformasiImageSources($informasiPaginator, Collection $imagesByInformasiId)
+    {
+        $disk = Storage::disk($this->mediaDisk());
+
+        $transformed = $informasiPaginator->getCollection()->map(function (KelolaInformasi $item) use ($disk, $imagesByInformasiId) {
+            $resolvedImages = collect();
+
+            $resolvedImages = collect($imagesByInformasiId->get($item->id, []))
+                ->map(function (KelolaInformasiImage $image) use ($disk) {
+                    $imagePath = is_string($image->image_path) ? trim($image->image_path) : '';
+
+                    if ($imagePath === '') {
+                        return null;
+                    }
+
+                    return [
+                        'id' => $image->id,
+                        'source' => $disk->url($imagePath),
+                    ];
+                })
+                ->filter()
+                ->values();
+
+            if ($resolvedImages->isEmpty()) {
+                $legacyPath = is_string($item->image_path) ? trim($item->image_path) : '';
+
+                if ($legacyPath !== '') {
+                    $resolvedImages->push([
+                        'id' => null,
+                        'source' => $disk->url($legacyPath),
+                    ]);
+                }
+            }
+
+            $item->image_items = $resolvedImages;
+            $item->image_source = $resolvedImages->first()['source'] ?? null;
+
+            return $item;
+        });
+
+        $informasiPaginator->setCollection($transformed);
+
+        return $informasiPaginator;
+    }
+
+    private function storeInformasiImage(KelolaInformasi $informasi, UploadedFile $imageFile): void
+    {
+        $storedPath = null;
+
+        try {
+            $storedPath = $imageFile->store('kelola_informasi', $this->mediaDisk());
+            if (!is_string($storedPath) || $storedPath === '') {
+                $storedPath = null;
+            }
+        } catch (Throwable $exception) {
+            $storedPath = null;
+        }
+
+        $imageData = null;
+        if ($storedPath === null) {
+            $mimeType = $imageFile->getMimeType() ?: 'application/octet-stream';
+            $imageData = 'data:'.$mimeType.';base64,'.base64_encode((string) $imageFile->get());
+        }
+
+        KelolaInformasiImage::create([
+            'kelola_informasi_id' => $informasi->id,
+            'image_path' => $storedPath,
+            'image_data' => $imageData,
+        ]);
     }
 
     private function getBerandaVideoPath(): ?string

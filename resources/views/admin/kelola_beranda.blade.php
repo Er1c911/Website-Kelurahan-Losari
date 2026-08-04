@@ -34,7 +34,7 @@
                 <div class="bg-white border border-gray-200 rounded-xl p-6 md:p-8">
                     <h3 class="text-lg font-bold text-gray-800">Atur URL Video Beranda</h3>
                     <p class="mt-2 text-sm text-gray-600 leading-relaxed">
-                        Masukkan URL langsung ke file video (.mp4, .webm, .ogg, atau .mov) atau link Google Drive /file/d/... untuk ditampilkan di halaman beranda.
+                        Masukkan URL atau link video ke kolom di bawah ini
                     </p>
 
                     <form action="{{ route('admin.kelola-beranda.video.update') }}" method="POST" class="mt-6 space-y-4">

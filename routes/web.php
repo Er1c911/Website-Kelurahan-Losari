@@ -25,15 +25,28 @@ Route::get('/storage/{path}', function (string $path) {
         abort(404);
     }
 
-    return response()->file(Storage::disk($disk)->path($path));
+    return Storage::disk($disk)->response($path);
 })->where('path', '.*');
+
+Route::get('/media/{path}', function (string $path) {
+    $disk = config('filesystems.media', 'public');
+
+    if (! Storage::disk($disk)->exists($path)) {
+        abort(404);
+    }
+
+    return Storage::disk($disk)->response($path);
+})->where('path', '.*')->name('media.file');
 
 // Halaman Publik (User biasa tanpa login)
 Route::get('/', [\App\Http\Controllers\KelolaInformasiController::class, 'index'])->name('home');
 Route::get('/informasi-desa', [\App\Http\Controllers\KelolaInformasiController::class, 'informasiDesa'])
     ->name('informasi-desa');
 Route::get('/umkm', [\App\Http\Controllers\KelolaInformasiController::class, 'umkm'])->name('umkm');
+Route::get('/potensi-kelurahan', [\App\Http\Controllers\KelolaInformasiController::class, 'potensiKelurahan'])
+    ->name('potensi-kelurahan');
 Route::view('/kalender-desa', 'kalender_desa')->name('kalender-desa');
+Route::get('/kontak', [\App\Http\Controllers\KelolaInformasiController::class, 'kontak'])->name('kontak');
 Route::get('/kalender-desa/data', function (\Illuminate\Http\Request $request) {
     $now = now(config('app.timezone'));
 
@@ -116,6 +129,12 @@ Route::middleware(['auth'])->group(function () {
         ->name('admin.kelola-beranda.manage');
     Route::get('/admin/kelola-umkm', [\App\Http\Controllers\AdminKelolaInformasiController::class, 'manageUmkm'])
         ->name('admin.kelola-umkm.manage');
+    Route::get('/admin/kelola-potensi-kelurahan', [\App\Http\Controllers\AdminKelolaInformasiController::class, 'managePotensiKelurahan'])
+        ->name('admin.kelola-potensi.manage');
+    Route::get('/admin/kelola-kontak', [\App\Http\Controllers\AdminKelolaInformasiController::class, 'manageKontak'])
+        ->name('admin.kelola-kontak.manage');
+    Route::put('/admin/kelola-kontak', [\App\Http\Controllers\AdminKelolaInformasiController::class, 'updateKontak'])
+        ->name('admin.kelola-kontak.update');
     Route::post('/admin/kelola-beranda/video', [\App\Http\Controllers\AdminKelolaInformasiController::class, 'updateBerandaVideo'])
         ->name('admin.kelola-beranda.video.update');
     Route::delete('/admin/kelola-beranda/video', [\App\Http\Controllers\AdminKelolaInformasiController::class, 'destroyBerandaVideo'])
@@ -135,6 +154,16 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/admin/kelola-umkm/menu-images/{menuImage}', [\App\Http\Controllers\AdminKelolaInformasiController::class, 'destroyUmkmMenuImage'])
         ->name('admin.kelola-umkm.menu-images.destroy');
 
+    // Endpoint CRUD pengelolaan potensi kelurahan
+    Route::post('/admin/kelola-potensi-kelurahan', [\App\Http\Controllers\AdminKelolaInformasiController::class, 'storePotensiKelurahan'])
+        ->name('admin.kelola-potensi.store');
+    Route::put('/admin/kelola-potensi-kelurahan/{potensi}', [\App\Http\Controllers\AdminKelolaInformasiController::class, 'updatePotensiKelurahan'])
+        ->name('admin.kelola-potensi.update');
+    Route::delete('/admin/kelola-potensi-kelurahan/{potensi}/images/{image}', [\App\Http\Controllers\AdminKelolaInformasiController::class, 'destroyPotensiImage'])
+        ->name('admin.kelola-potensi.images.destroy');
+    Route::delete('/admin/kelola-potensi-kelurahan/{potensi}', [\App\Http\Controllers\AdminKelolaInformasiController::class, 'destroyPotensiKelurahan'])
+        ->name('admin.kelola-potensi.destroy');
+
     // Endpoint CRUD pengelolaan kalender kelurahan
     Route::post('/admin/kelola-kalender', [\App\Http\Controllers\AdminKelolaInformasiController::class, 'storeKalender'])
         ->name('admin.kelola-kalender.store');
@@ -148,6 +177,12 @@ Route::middleware(['auth'])->group(function () {
         ->name('admin.kelola-informasi.store');
     Route::put('/admin/kelola-informasi/{informasi}', [\App\Http\Controllers\AdminKelolaInformasiController::class, 'update'])
         ->name('admin.kelola-informasi.update');
+    Route::post('/admin/kelola-informasi/{informasi}/images', [\App\Http\Controllers\AdminKelolaInformasiController::class, 'storeInformasiImages'])
+        ->name('admin.kelola-informasi.images.store');
+    Route::put('/admin/kelola-informasi/{informasi}/images/{image}', [\App\Http\Controllers\AdminKelolaInformasiController::class, 'updateInformasiImage'])
+        ->name('admin.kelola-informasi.images.update');
+    Route::delete('/admin/kelola-informasi/{informasi}/images/{image}', [\App\Http\Controllers\AdminKelolaInformasiController::class, 'destroyInformasiImage'])
+        ->name('admin.kelola-informasi.images.destroy');
     Route::delete('/admin/kelola-informasi/{informasi}', [\App\Http\Controllers\AdminKelolaInformasiController::class, 'destroy'])
         ->name('admin.kelola-informasi.destroy');
 });
