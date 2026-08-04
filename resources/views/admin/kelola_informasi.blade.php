@@ -42,16 +42,6 @@
                 </div>
             @endif
 
-            @if ($hasCloudinaryDirectUpload)
-                <div class="mb-6 bg-blue-50 border border-blue-200 text-blue-800 rounded-xl p-4 text-sm">
-                    Upload foto berjalan langsung dari browser ke penyimpanan cloud agar tidak terkena batas upload Vercel.
-                </div>
-            @else
-                <div class="mb-6 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-4 text-sm">
-                    Cloudinary belum dikonfigurasi. Upload file besar di hosting Vercel bisa gagal sampai env <strong>CLOUDINARY_CLOUD_NAME</strong> dan <strong>CLOUDINARY_UPLOAD_PRESET</strong> diisi.
-                </div>
-            @endif
-
             <div class="bg-white border border-gray-200 rounded-xl p-6 md:p-8 mb-8">
                 <h2 class="text-lg md:text-xl font-bold mb-4">Tambah Informasi Baru</h2>
 
@@ -74,6 +64,9 @@
                         <label for="images" class="block text-sm font-semibold mb-1">Foto Informasi (opsional, bisa lebih dari 1)</label>
                         <input type="file" id="images" name="images[]" accept="image/*" multiple data-upload-input="multi"
                                class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white">
+                        @if (! $hasCloudinaryDirectUpload)
+                            <p class="mt-2 text-xs text-amber-700">Upload file tetap tersedia, tetapi di Vercel file besar masih bisa gagal sebelum Cloudinary dikonfigurasi.</p>
+                        @endif
                     </div>
 
                     <button type="submit"
@@ -126,6 +119,9 @@
                                                     @method('PUT')
                                                     <label class="block text-xs font-semibold text-gray-600">Ganti Foto Ini</label>
                                                     <input type="file" name="image" accept="image/*" required data-upload-input="single" class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-sm">
+                                                    @if (! $hasCloudinaryDirectUpload)
+                                                        <p class="text-xs text-amber-700">Upload file tetap tersedia, tetapi di Vercel file besar masih bisa gagal sebelum Cloudinary dikonfigurasi.</p>
+                                                    @endif
                                                     <button type="submit" data-submit-label="Ganti Foto" class="inline-flex items-center bg-amber-500 hover:bg-amber-600 text-white font-semibold px-3 py-2 rounded-lg text-sm transition">
                                                         Ganti Foto
                                                     </button>
@@ -150,6 +146,9 @@
                                 @csrf
                                 <label class="block text-sm font-semibold text-gray-700">Tambah Foto Baru</label>
                                 <input type="file" name="images[]" accept="image/*" multiple data-upload-input="multi" class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white">
+                                @if (! $hasCloudinaryDirectUpload)
+                                    <p class="text-xs text-amber-700">Upload file tetap tersedia, tetapi di Vercel file besar masih bisa gagal sebelum Cloudinary dikonfigurasi.</p>
+                                @endif
                                 <button type="submit" data-submit-label="Tambah Foto" class="inline-flex items-center bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-lg transition">
                                     Tambah Foto
                                 </button>

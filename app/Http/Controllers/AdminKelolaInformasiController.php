@@ -737,7 +737,7 @@ class AdminKelolaInformasiController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'images.*' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp'],
-            'image_urls.*' => ['nullable', 'url', 'max:2048'],
+            'image_urls_text' => ['nullable', 'string', 'max:10000'],
         ]);
 
         $data = [
@@ -750,7 +750,7 @@ class AdminKelolaInformasiController extends Controller
 
         $informasi = KelolaInformasi::create($data);
 
-        $imageUrls = collect($validated['image_urls'] ?? [])->filter()->values();
+        $imageUrls = $this->parseImageUrlsText($validated['image_urls_text'] ?? null);
 
         if ($request->hasFile('images') || $imageUrls->isNotEmpty()) {
             if (! Schema::hasTable('kelola_informasi_images')) {
@@ -798,10 +798,10 @@ class AdminKelolaInformasiController extends Controller
 
         $request->validate([
             'images.*' => ['required', 'image', 'mimes:jpg,jpeg,png,webp'],
-            'image_urls.*' => ['nullable', 'url', 'max:2048'],
+            'image_urls_text' => ['nullable', 'string', 'max:10000'],
         ]);
 
-        $imageUrls = collect($request->input('image_urls', []))->filter()->values();
+        $imageUrls = $this->parseImageUrlsText($request->input('image_urls_text'));
 
         foreach ($imageUrls as $imageUrl) {
             $this->storeInformasiImageFromUrl($informasi, (string) $imageUrl);
@@ -1019,6 +1019,19 @@ class AdminKelolaInformasiController extends Controller
             'image_path' => $trimmedUrl,
             'image_data' => null,
         ]);
+    }
+
+    private function parseImageUrlsText($raw): Collection
+    {
+        if (!is_string($raw) || trim($raw) === '') {
+            return collect();
+        }
+
+        return collect(preg_split('/\r\n|\r|\n/', $raw) ?: [])
+            ->map(fn ($value) => trim((string) $value))
+            ->filter()
+            ->filter(fn ($value) => filter_var($value, FILTER_VALIDATE_URL))
+            ->values();
     }
 
     private function getBerandaVideoPath(): ?string
