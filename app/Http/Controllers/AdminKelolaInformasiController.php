@@ -280,7 +280,7 @@ class AdminKelolaInformasiController extends Controller
             'description' => ['nullable', 'string', 'max:2000'],
             'contact_name' => ['required', 'string', 'max:255'],
             'whatsapp_link' => ['required', 'url', 'max:255'],
-            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp'],
+            'photo_url' => ['nullable', 'url', 'max:2048'],
         ]);
 
         $data = [
@@ -290,20 +290,10 @@ class AdminKelolaInformasiController extends Controller
             'whatsapp_link' => $validated['whatsapp_link'],
         ];
 
-        if ($request->hasFile('photo')) {
-            $imageFile = $request->file('photo');
-            $mimeType = $imageFile->getMimeType() ?: 'application/octet-stream';
-            $data['photo_data'] = 'data:'.$mimeType.';base64,'.base64_encode((string) $imageFile->get());
-
-            try {
-                $storedPath = $imageFile->store('umkm', $this->mediaDisk());
-                if (is_string($storedPath) && $storedPath !== '') {
-                    $data['photo_path'] = $storedPath;
-                }
-            } catch (Throwable $exception) {
-                // On serverless filesystems, local disk writes can fail. Keep photo_data as fallback.
-                $data['photo_path'] = null;
-            }
+        $photoUrl = trim((string) ($validated['photo_url'] ?? ''));
+        if ($photoUrl !== '') {
+            $data['photo_path'] = $this->normalizeExternalImageUrl($photoUrl);
+            $data['photo_data'] = null;
         }
 
         try {
@@ -324,7 +314,7 @@ class AdminKelolaInformasiController extends Controller
             'description' => ['nullable', 'string', 'max:2000'],
             'contact_name' => ['required', 'string', 'max:255'],
             'whatsapp_link' => ['required', 'url', 'max:255'],
-            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp'],
+            'photo_url' => ['nullable', 'url', 'max:2048'],
         ]);
 
         $umkm->name = $validated['name'];
@@ -332,19 +322,14 @@ class AdminKelolaInformasiController extends Controller
         $umkm->contact_name = $validated['contact_name'];
         $umkm->whatsapp_link = $validated['whatsapp_link'];
 
-        if ($request->hasFile('photo')) {
-            if (!empty($umkm->photo_path)) {
+        $photoUrl = trim((string) ($validated['photo_url'] ?? ''));
+        if ($photoUrl !== '') {
+            if (!empty($umkm->photo_path) && ! $this->isExternalUrl($umkm->photo_path)) {
                 Storage::disk($this->mediaDisk())->delete($umkm->photo_path);
             }
 
-            $imageFile = $request->file('photo');
-            $mimeType = $imageFile->getMimeType() ?: 'application/octet-stream';
-            $umkm->photo_data = 'data:'.$mimeType.';base64,'.base64_encode((string) $imageFile->get());
-
-            $path = $imageFile->store('umkm', $this->mediaDisk());
-            if (is_string($path) && $path !== '') {
-                $umkm->photo_path = $path;
-            }
+            $umkm->photo_path = $this->normalizeExternalImageUrl($photoUrl);
+            $umkm->photo_data = null;
         }
 
         $umkm->save();
@@ -354,11 +339,11 @@ class AdminKelolaInformasiController extends Controller
 
     public function destroyUmkm(Umkm $umkm)
     {
-        if (!empty($umkm->photo_path)) {
+        if (!empty($umkm->photo_path) && ! $this->isExternalUrl($umkm->photo_path)) {
             Storage::disk($this->mediaDisk())->delete($umkm->photo_path);
         }
 
-        if (!empty($umkm->menu_path)) {
+        if (!empty($umkm->menu_path) && ! $this->isExternalUrl($umkm->menu_path)) {
             Storage::disk($this->mediaDisk())->delete($umkm->menu_path);
         }
 
@@ -369,8 +354,10 @@ class AdminKelolaInformasiController extends Controller
 
     public function destroyUmkmPhoto(Umkm $umkm)
     {
-        if (!empty($umkm->photo_path)) {
+        if (!empty($umkm->photo_path) && ! $this->isExternalUrl($umkm->photo_path)) {
             Storage::disk($this->mediaDisk())->delete($umkm->photo_path);
+            $umkm->photo_path = null;
+        } else {
             $umkm->photo_path = null;
         }
 
@@ -382,31 +369,24 @@ class AdminKelolaInformasiController extends Controller
 
     public function storeUmkmMenuImages(Request $request, Umkm $umkm)
     {
-        $validated = $request->validate([
-            'menu_images.*' => ['required', 'image', 'mimes:jpg,jpeg,png,webp'],
+        $request->validate([
+            'menu_image_urls_text' => ['required', 'string', 'max:10000'],
         ]);
 
-        if ($request->hasFile('menu_images')) {
-            foreach ($request->file('menu_images') as $menuFile) {
-                $mimeType = $menuFile->getMimeType() ?: 'application/octet-stream';
-                $imageData = 'data:'.$mimeType.';base64,'.base64_encode((string) $menuFile->get());
+        $imageUrls = $this->parseImageUrlsText($request->input('menu_image_urls_text'));
 
-                $storedPath = null;
-                try {
-                    $storedPath = $menuFile->store('umkm/menu', $this->mediaDisk());
-                    if (!is_string($storedPath) || $storedPath === '') {
-                        $storedPath = null;
-                    }
-                } catch (Throwable $exception) {
-                    $storedPath = null;
-                }
+        if ($imageUrls->isEmpty()) {
+            return back()->withErrors([
+                'menu_image_urls_text' => 'Masukkan minimal satu URL gambar menu yang valid (http/https).',
+            ])->withInput();
+        }
 
-                UmkmMenuImage::create([
-                    'umkm_id' => $umkm->id,
-                    'image_path' => $storedPath,
-                    'image_data' => $imageData,
-                ]);
-            }
+        foreach ($imageUrls as $imageUrl) {
+            UmkmMenuImage::create([
+                'umkm_id' => $umkm->id,
+                'image_path' => $this->normalizeExternalImageUrl((string) $imageUrl),
+                'image_data' => null,
+            ]);
         }
 
         return back()->with('status', 'Gambar menu berhasil ditambahkan.');
@@ -414,7 +394,7 @@ class AdminKelolaInformasiController extends Controller
 
     public function destroyUmkmMenuImage(UmkmMenuImage $menuImage)
     {
-        if (!empty($menuImage->image_path)) {
+        if (!empty($menuImage->image_path) && ! $this->isExternalUrl($menuImage->image_path)) {
             Storage::disk($this->mediaDisk())->delete($menuImage->image_path);
         }
 

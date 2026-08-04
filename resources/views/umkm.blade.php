@@ -77,8 +77,33 @@
         <section class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-6">
             @forelse ($umkms as $item)
                 <article class="card-show bg-white rounded-2xl border border-slate-200 p-6 shadow-[0_12px_30px_rgba(15,47,95,0.12)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(15,47,95,0.22)]">
-                    @if ($item->photo_data || $item->photo_path)
-                        <img src="{{ $item->photo_data ?: \Illuminate\Support\Facades\Storage::disk(config('filesystems.media', 'public'))->url($item->photo_path) }}" alt="{{ $item->name }}" class="w-full h-44 object-cover rounded-xl mb-4 border border-slate-200">
+                    @php
+                        $photoSource = ($item->photo_data || $item->photo_path)
+                            ? route('umkm.image', ['umkm' => $item])
+                            : null;
+
+                        $menuImageSources = $item->menuImages
+                            ->map(fn($m) => route('umkm.menu-image', ['menuImage' => $m]))
+                            ->filter()
+                            ->values();
+
+                        $legacyMenuSource = ($item->menu_data || $item->menu_path)
+                            ? route('umkm.legacy-menu-image', ['umkm' => $item])
+                            : null;
+                        if ($legacyMenuSource) {
+                            $menuImageSources->prepend($legacyMenuSource);
+                        }
+
+                        // Backward-compatibility: when older data stores pricelist in photo field,
+                        // move it to popup source and keep card clean.
+                        if ($menuImageSources->isEmpty() && $photoSource) {
+                            $menuImageSources = collect([$photoSource]);
+                            $photoSource = null;
+                        }
+                    @endphp
+
+                    @if ($photoSource)
+                        <img src="{{ $photoSource }}" alt="{{ $item->name }}" class="w-full h-44 object-cover rounded-xl mb-4 border border-slate-200">
                     @endif
 
                     <h2 class="text-xl font-extrabold text-blue-900 mb-2">{{ $item->name }}</h2>
@@ -92,10 +117,10 @@
                             {{ $item->contact_name }}
                         </a>
 
-                        @if ($item->menuImages->count() > 0)
+                        @if ($menuImageSources->count() > 0)
                             <button
                                 type="button"
-                                onclick="openMenuGallery({{ json_encode($item->menuImages->map(fn($m) => $m->image_data ?: \Illuminate\Support\Facades\Storage::disk(config('filesystems.media', 'public'))->url($m->image_path))->toArray()) }}, '{{ e($item->name) }}')"
+                                onclick="openMenuGallery({{ json_encode($menuImageSources->toArray()) }}, '{{ e($item->name) }}')"
                                 class="inline-flex items-center gap-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-3 py-2 transition">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4" aria-hidden="true">
                                     <path fill-rule="evenodd" d="M1.5 6a3 3 0 0 1 3-3h16a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H4.5a3 3 0 0 1-3-3V6Zm9 5.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0ZM16 8.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" clip-rule="evenodd" />

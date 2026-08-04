@@ -35,7 +35,7 @@
             <div class="bg-white border border-gray-200 rounded-xl p-6 md:p-8 mb-8">
                 <h2 class="text-lg md:text-xl font-bold mb-4">Tambah UMKM Baru</h2>
 
-                <form action="{{ route('admin.kelola-umkm.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
+                <form action="{{ route('admin.kelola-umkm.store') }}" method="POST" class="space-y-4">
                     @csrf
 
                     <div>
@@ -63,9 +63,9 @@
                     </div>
 
                     <div>
-                        <label for="photo" class="block text-sm font-semibold mb-1">Foto (opsional)</label>
-                        <input type="file" id="photo" name="photo" accept="image/*"
-                               class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white">
+                        <label for="photo_url" class="block text-sm font-semibold mb-1">URL Foto (opsional)</label>
+                        <input type="url" id="photo_url" name="photo_url" value="{{ old('photo_url') }}" placeholder="https://example.com/foto-umkm.jpg"
+                               class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400">
                     </div>
 
                     <button type="submit"
@@ -80,7 +80,7 @@
 
                 @forelse ($umkms as $item)
                     <div class="bg-white border border-gray-200 rounded-xl p-6 md:p-8">
-                        <form action="{{ route('admin.kelola-umkm.update', $item) }}" method="POST" enctype="multipart/form-data" class="space-y-4">
+                        <form action="{{ route('admin.kelola-umkm.update', $item) }}" method="POST" class="space-y-4">
                             @csrf
                             @method('PUT')
 
@@ -111,13 +111,13 @@
                             @if ($item->photo_data || $item->photo_path)
                                 <div>
                                     <p class="text-sm font-semibold mb-2">Foto Saat Ini</p>
-                                    <img src="{{ $item->photo_data ?: \Illuminate\Support\Facades\Storage::disk(config('filesystems.media', 'public'))->url($item->photo_path) }}" alt="{{ $item->name }}" class="w-full max-w-md rounded-lg border border-gray-200 object-cover">
+                                    <img src="{{ route('umkm.image', ['umkm' => $item]) }}" alt="{{ $item->name }}" class="w-full max-w-md rounded-lg border border-gray-200 object-cover">
                                 </div>
                             @endif
 
                             <div>
-                                <label class="block text-sm font-semibold mb-1">Ganti Foto (opsional)</label>
-                                <input type="file" name="photo" accept="image/*"
+                                <label class="block text-sm font-semibold mb-1">Ganti Foto (URL, opsional)</label>
+                                <input type="url" name="photo_url" value="" placeholder="https://example.com/foto-baru.jpg"
                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white">
                             </div>
 
@@ -135,7 +135,7 @@
                                 <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-6">
                                     @foreach ($item->menuImages as $menuImage)
                                         <div class="relative group">
-                                            <img src="{{ $menuImage->image_data ?: \Illuminate\Support\Facades\Storage::disk(config('filesystems.media', 'public'))->url($menuImage->image_path) }}" alt="Menu" class="w-full aspect-square object-cover rounded-lg border border-gray-200">
+                                            <img src="{{ route('umkm.menu-image', ['menuImage' => $menuImage]) }}" alt="Menu" class="w-full aspect-square object-cover rounded-lg border border-gray-200">
                                             <form action="{{ route('admin.kelola-umkm.menu-images.destroy', $menuImage) }}" method="POST" onsubmit="return confirm('Hapus gambar menu ini?');" class="absolute inset-0 rounded-lg bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
                                                 @csrf
                                                 @method('DELETE')
@@ -150,16 +150,15 @@
                                 <p class="text-sm text-gray-500 mb-4">Belum ada gambar menu yang diunggah.</p>
                             @endif
 
-                            <form action="{{ route('admin.kelola-umkm.menu-images.store', $item) }}" method="POST" enctype="multipart/form-data" class="space-y-3">
+                            <form action="{{ route('admin.kelola-umkm.menu-images.store', $item) }}" method="POST" class="space-y-3">
                                 @csrf
                                 <div>
-                                    <label class="block text-sm font-semibold mb-2">Upload Gambar Menu / Pricelist (bisa multiple)</label>
-                                    <input type="file" name="menu_images[]" accept="image/*" multiple
-                                           class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white">
-                                    <p class="text-xs text-gray-500 mt-1">Format: JPG, PNG, WebP. Maks 4MB per gambar. Bisa pilih multiple file sekaligus.</p>
+                                    <label class="block text-sm font-semibold mb-2">URL Gambar Menu / Pricelist (bisa multiple)</label>
+                                    <textarea name="menu_image_urls_text" rows="3" placeholder="Satu URL per baris\nhttps://example.com/menu-1.jpg\nhttps://example.com/menu-2.jpg"
+                                              class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white">{{ old('menu_image_urls_text') }}</textarea>
                                 </div>
                                 <button type="submit" class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded-lg transition">
-                                    Upload Gambar Menu
+                                    Tambah Gambar Menu
                                 </button>
                             </form>
                         </div>

@@ -7,6 +7,7 @@ use App\Models\KelolaInformasiImage;
 use App\Models\PotensiKelurahanImage;
 use App\Models\PotensiKelurahanItem;
 use App\Models\Umkm;
+use App\Models\UmkmMenuImage;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
@@ -65,6 +66,21 @@ class KelolaInformasiController extends Controller
         return view('umkm', [
             'umkms' => $umkms,
         ]);
+    }
+
+    public function umkmImage(Umkm $umkm)
+    {
+        return $this->imageResponse($umkm->photo_path, $umkm->photo_data);
+    }
+
+    public function umkmMenuImage(UmkmMenuImage $menuImage)
+    {
+        return $this->imageResponse($menuImage->image_path, $menuImage->image_data);
+    }
+
+    public function umkmLegacyMenuImage(Umkm $umkm)
+    {
+        return $this->imageResponse($umkm->menu_path, $umkm->menu_data);
     }
 
     public function potensiKelurahan()

@@ -47,6 +47,12 @@ Route::get('/informasi-desa/images/{image}', [\App\Http\Controllers\KelolaInform
 Route::get('/informasi-desa/legacy-images/{informasi}', [\App\Http\Controllers\KelolaInformasiController::class, 'informasiLegacyImage'])
     ->name('informasi.legacy-image');
 Route::get('/umkm', [\App\Http\Controllers\KelolaInformasiController::class, 'umkm'])->name('umkm');
+Route::get('/umkm/images/{umkm}', [\App\Http\Controllers\KelolaInformasiController::class, 'umkmImage'])
+    ->name('umkm.image');
+Route::get('/umkm/menu-images/{menuImage}', [\App\Http\Controllers\KelolaInformasiController::class, 'umkmMenuImage'])
+    ->name('umkm.menu-image');
+Route::get('/umkm/legacy-menu-images/{umkm}', [\App\Http\Controllers\KelolaInformasiController::class, 'umkmLegacyMenuImage'])
+    ->name('umkm.legacy-menu-image');
 Route::get('/potensi-kelurahan', [\App\Http\Controllers\KelolaInformasiController::class, 'potensiKelurahan'])
     ->name('potensi-kelurahan');
 Route::get('/potensi-kelurahan/images/{image}', [\App\Http\Controllers\KelolaInformasiController::class, 'potensiImage'])
