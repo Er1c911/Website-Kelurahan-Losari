@@ -78,14 +78,13 @@
             @forelse ($umkms as $item)
                 <article class="card-show bg-white rounded-2xl border border-slate-200 p-6 shadow-[0_12px_30px_rgba(15,47,95,0.12)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(15,47,95,0.22)]">
                     @php
-                        $photoSource = ($item->photo_data || $item->photo_path)
-                            ? route('umkm.image', ['umkm' => $item])
-                            : null;
-
-                        $menuImageSources = $item->menuImages
-                            ->map(fn($m) => route('umkm.menu-image', ['menuImage' => $m]))
-                            ->filter()
-                            ->values();
+                        $menuImageSources = collect(
+                            $item->menuImages
+                                ->map(fn($m) => route('umkm.menu-image', ['menuImage' => $m]))
+                                ->filter()
+                                ->values()
+                                ->all()
+                        );
 
                         $legacyMenuSource = ($item->menu_data || $item->menu_path)
                             ? route('umkm.legacy-menu-image', ['umkm' => $item])
@@ -94,17 +93,16 @@
                             $menuImageSources->prepend($legacyMenuSource);
                         }
 
-                        // Backward-compatibility: when older data stores pricelist in photo field,
-                        // move it to popup source and keep card clean.
-                        if ($menuImageSources->isEmpty() && $photoSource) {
-                            $menuImageSources = collect([$photoSource]);
-                            $photoSource = null;
+                        $legacyPhotoSource = ($item->photo_data || $item->photo_path)
+                            ? route('umkm.image', ['umkm' => $item])
+                            : null;
+                        if ($legacyPhotoSource) {
+                            $menuImageSources->prepend($legacyPhotoSource);
                         }
-                    @endphp
 
-                    @if ($photoSource)
-                        <img src="{{ $photoSource }}" alt="{{ $item->name }}" class="w-full h-44 object-cover rounded-xl mb-4 border border-slate-200">
-                    @endif
+                        $menuImageSources = $menuImageSources->unique()->values();
+
+                    @endphp
 
                     <h2 class="text-xl font-extrabold text-blue-900 mb-2">{{ $item->name }}</h2>
                     <p class="text-sm text-gray-600 leading-relaxed mb-4">{{ $item->description ?: 'Deskripsi belum tersedia.' }}</p>

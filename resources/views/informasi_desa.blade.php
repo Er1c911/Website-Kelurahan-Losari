@@ -115,9 +115,9 @@
                 <article class="card-reveal relative bg-slate-50 rounded-3xl shadow-[0_12px_40px_rgba(15,47,95,0.12)] hover:-translate-y-1 hover:shadow-[0_20px_50px_rgba(15,47,95,0.18)] hover:border-slate-300 transition-all duration-300 overflow-hidden border border-slate-200/70">
                     <div class="flex flex-col lg:flex-row min-h-[320px]">
                         @if (!empty($section->image_source))
-                            <div class="w-full lg:w-2/5 min-h-[240px] lg:min-h-[320px] overflow-hidden bg-slate-100">
+                            <div class="w-full lg:w-2/5 h-[240px] lg:h-[320px] overflow-hidden bg-slate-100">
                                 @if (($section->image_sources ?? collect())->count() > 1)
-                                    <div class="slider-frame" data-slider data-interval="5000">
+                                    <div class="slider-frame h-full" data-slider data-interval="5000">
                                         @foreach ($section->image_sources as $imageSource)
                                             <img src="{{ $imageSource }}" alt="{{ $section->title }}" class="slider-image {{ $loop->first ? 'is-active' : '' }}" data-slider-image>
                                         @endforeach

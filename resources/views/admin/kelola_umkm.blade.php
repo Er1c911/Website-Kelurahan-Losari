@@ -62,12 +62,6 @@
                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400">
                     </div>
 
-                    <div>
-                        <label for="photo_url" class="block text-sm font-semibold mb-1">URL Foto (opsional)</label>
-                        <input type="url" id="photo_url" name="photo_url" value="{{ old('photo_url') }}" placeholder="https://example.com/foto-umkm.jpg"
-                               class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400">
-                    </div>
-
                     <button type="submit"
                             class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-lg transition">
                         Simpan UMKM
@@ -106,19 +100,6 @@
                                 <label class="block text-sm font-semibold mb-1">Link WhatsApp Kontak</label>
                                 <input type="url" name="whatsapp_link" value="{{ old('whatsapp_link', $item->whatsapp_link) }}" required
                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400">
-                            </div>
-
-                            @if ($item->photo_data || $item->photo_path)
-                                <div>
-                                    <p class="text-sm font-semibold mb-2">Foto Saat Ini</p>
-                                    <img src="{{ route('umkm.image', ['umkm' => $item]) }}" alt="{{ $item->name }}" class="w-full max-w-md rounded-lg border border-gray-200 object-cover">
-                                </div>
-                            @endif
-
-                            <div>
-                                <label class="block text-sm font-semibold mb-1">Ganti Foto (URL, opsional)</label>
-                                <input type="url" name="photo_url" value="" placeholder="https://example.com/foto-baru.jpg"
-                                       class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white">
                             </div>
 
                             <button type="submit"
@@ -172,18 +153,6 @@
                             </button>
                         </form>
 
-                        @if ($item->photo_data || $item->photo_path)
-                            <form action="{{ route('admin.kelola-umkm.photo.destroy', $item) }}" method="POST" onsubmit="return confirm('Hapus foto UMKM ini?');" class="mt-3">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="inline-flex items-center gap-1 bg-red-100 hover:bg-red-200 text-red-700 text-sm font-semibold px-4 py-2 rounded-lg transition">
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
-                                        <path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clip-rule="evenodd" />
-                                    </svg>
-                                    Hapus Foto
-                                </button>
-                            </form>
-                        @endif
                     </div>
                 @empty
                     <div class="bg-white border border-gray-200 rounded-xl p-6 text-gray-600">
