@@ -8,6 +8,7 @@ use App\Models\PotensiKelurahanImage;
 use App\Models\PotensiKelurahanItem;
 use App\Models\Umkm;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 
@@ -141,9 +142,7 @@ class KelolaInformasiController extends Controller
                     return $this->resolveImageSource(
                         $disk,
                         $image->image_path,
-                        is_string($image->image_data) && trim($image->image_data) !== ''
-                            ? route('informasi.image', ['image' => $image])
-                            : null
+                        route('informasi.image', ['image' => $image])
                     );
                 })
                 ->filter()
@@ -153,9 +152,7 @@ class KelolaInformasiController extends Controller
                 $legacySource = $this->resolveImageSource(
                     $disk,
                     $section->image_path,
-                    is_string($section->image_data) && trim($section->image_data) !== ''
-                        ? route('informasi.legacy-image', ['informasi' => $section])
-                        : null
+                    route('informasi.legacy-image', ['informasi' => $section])
                 );
 
                 if ($legacySource !== null) {
@@ -194,9 +191,7 @@ class KelolaInformasiController extends Controller
                     return $this->resolveImageSource(
                         $disk,
                         $image->image_path,
-                        is_string($image->image_data) && trim($image->image_data) !== ''
-                            ? route('potensi.image', ['image' => $image])
-                            : null
+                        route('potensi.image', ['image' => $image])
                     );
                 })
                 ->filter()
@@ -206,9 +201,7 @@ class KelolaInformasiController extends Controller
                 $legacySource = $this->resolveImageSource(
                     $disk,
                     $item->image_path,
-                    is_string($item->image_data) && trim($item->image_data) !== ''
-                        ? route('potensi.legacy-image', ['potensi' => $item])
-                        : null
+                    route('potensi.legacy-image', ['potensi' => $item])
                 );
 
                 if ($legacySource !== null) {
@@ -269,20 +262,37 @@ class KelolaInformasiController extends Controller
 
     private function extractGoogleDriveFileId(?string $url): ?string
     {
-        if (! is_string($url) || $url === '') {
+        if (! is_string($url) || trim($url) === '') {
             return null;
         }
 
-        if (preg_match('#^https?://drive\.google\.com/file/d/([^/]+)/#i', $url, $matches) === 1) {
-            return $matches[1];
+        $parts = parse_url(trim($url));
+
+        if (! is_array($parts)) {
+            return null;
         }
 
-        if (preg_match('#^https?://drive\.google\.com/open\?id=([^&]+)#i', $url, $matches) === 1) {
-            return $matches[1];
+        $host = strtolower((string) ($parts['host'] ?? ''));
+        if (! in_array($host, ['drive.google.com', 'www.drive.google.com'], true)) {
+            return null;
         }
 
-        if (preg_match('#^https?://drive\.google\.com/uc\?export=download&id=([A-Za-z0-9_-]+)$#i', $url, $matches) === 1) {
-            return $matches[1];
+        $path = trim((string) ($parts['path'] ?? ''), '/');
+        $segments = $path === '' ? [] : explode('/', $path);
+
+        if (($segments[0] ?? null) === 'file' && ($segments[1] ?? null) === 'd') {
+            $fileId = trim((string) ($segments[2] ?? ''));
+            if ($fileId !== '') {
+                return $fileId;
+            }
+        }
+
+        $query = [];
+        parse_str((string) ($parts['query'] ?? ''), $query);
+
+        $fileId = isset($query['id']) ? trim((string) $query['id']) : '';
+        if ($fileId !== '') {
+            return $fileId;
         }
 
         return null;
@@ -328,7 +338,14 @@ class KelolaInformasiController extends Controller
         $imagePathValue = is_string($imagePath) ? trim($imagePath) : '';
 
         if ($this->isExternalUrl($imagePathValue)) {
-            return $imagePathValue;
+            $normalizedExternalUrl = $this->normalizeExternalImageUrl($imagePathValue);
+
+            // Google Drive images are often blocked by CORP in direct <img> usage, so proxy via our app when possible.
+            if ($this->extractGoogleDriveFileId($normalizedExternalUrl) !== null && is_string($fallbackUrl) && trim($fallbackUrl) !== '') {
+                return $fallbackUrl;
+            }
+
+            return $normalizedExternalUrl;
         }
 
         if ($imagePathValue !== '') {
@@ -349,10 +366,44 @@ class KelolaInformasiController extends Controller
         return is_string($value) && preg_match('#^https?://#i', trim($value)) === 1;
     }
 
+    private function normalizeExternalImageUrl(string $url): string
+    {
+        $fileId = $this->extractGoogleDriveFileId($url);
+
+        if ($fileId !== null) {
+            return 'https://drive.google.com/uc?export=view&id='.$fileId;
+        }
+
+        return $url;
+    }
+
     private function imageResponse($imagePath, $imageData)
     {
         $disk = Storage::disk($this->mediaDisk());
         $imagePathValue = is_string($imagePath) ? trim($imagePath) : '';
+
+        if ($this->isExternalUrl($imagePathValue)) {
+            $externalUrl = $this->normalizeExternalImageUrl($imagePathValue);
+
+            try {
+                $externalResponse = Http::timeout(20)
+                    ->withHeaders([
+                        'User-Agent' => 'Mozilla/5.0',
+                    ])
+                    ->get($externalUrl);
+
+                if ($externalResponse->successful()) {
+                    $contentType = (string) ($externalResponse->header('Content-Type') ?? 'application/octet-stream');
+
+                    return response($externalResponse->body(), 200, [
+                        'Content-Type' => $contentType,
+                        'Cache-Control' => 'public, max-age=86400',
+                    ]);
+                }
+            } catch (\Throwable $exception) {
+                // Continue to local-storage / inline fallback below.
+            }
+        }
 
         if ($imagePathValue !== '') {
             try {

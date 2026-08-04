@@ -35,7 +35,7 @@
             <div class="bg-white border border-gray-200 rounded-xl p-6 md:p-8 mb-8">
                 <h2 class="text-lg md:text-xl font-bold mb-4">Tambah Potensi Baru</h2>
 
-                <form action="{{ route('admin.kelola-potensi.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
+                <form action="{{ route('admin.kelola-potensi.store') }}" method="POST" class="space-y-4">
                     @csrf
 
                     <div>
@@ -51,9 +51,9 @@
                     </div>
 
                     <div>
-                        <label for="images" class="block text-sm font-semibold mb-1">Gambar Potensi (opsional, bisa lebih dari 1)</label>
-                        <input type="file" id="images" name="images[]" accept="image/*" multiple
-                               class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white">
+                        <label for="image_urls_text" class="block text-sm font-semibold mb-1">URL Gambar Potensi (opsional, bisa lebih dari 1)</label>
+                        <textarea id="image_urls_text" name="image_urls_text" rows="4" placeholder="Satu URL per baris\nhttps://example.com/gambar-1.jpg\nhttps://example.com/gambar-2.jpg"
+                                  class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400">{{ old('image_urls_text') }}</textarea>
                     </div>
 
                     <div>
@@ -74,7 +74,7 @@
 
                 @forelse ($items as $item)
                     <div class="bg-white border border-gray-200 rounded-xl p-6 md:p-8">
-                        <form action="{{ route('admin.kelola-potensi.update', $item) }}" method="POST" enctype="multipart/form-data" class="space-y-4">
+                        <form action="{{ route('admin.kelola-potensi.update', $item) }}" method="POST" class="space-y-4">
                             @csrf
                             @method('PUT')
 
@@ -91,12 +91,6 @@
                             </div>
 
                             <div>
-                                <label class="block text-sm font-semibold mb-1">Tambah Gambar Baru (opsional, bisa lebih dari 1)</label>
-                                <input type="file" name="images[]" accept="image/*" multiple
-                                       class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white">
-                            </div>
-
-                            <div>
                                 <label class="block text-sm font-semibold mb-1">Urutan Tampil (Opsional) </label>
                                 <input type="number" name="sort_order" value="{{ old('sort_order', $item->sort_order) }}" min="0"
                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400">
@@ -108,15 +102,26 @@
                             </button>
                         </form>
 
-                        @if (($item->image_items ?? collect())->isNotEmpty())
-                            <div class="mt-5 border-t border-gray-200 pt-5">
-                                <p class="text-sm font-semibold mb-2">Gambar Saat Ini</p>
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="mt-5 border-t border-gray-200 pt-5">
+                            <h3 class="text-sm font-bold text-gray-700 mb-3">Gambar Potensi</h3>
+
+                            @if (($item->image_items ?? collect())->isNotEmpty())
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                     @foreach ($item->image_items as $image)
                                         <div class="border border-gray-200 rounded-lg p-3 bg-gray-50">
-                                            <img src="{{ $image['source'] }}" alt="{{ $item->title }}" class="w-full h-40 rounded-lg border border-gray-200 object-cover">
+                                            <img src="{{ $image['source'] }}" alt="{{ $item->title }}" class="w-full h-48 object-cover rounded-lg border border-gray-200">
 
                                             @if (!empty($image['id']))
+                                                <form action="{{ route('admin.kelola-potensi.images.update', ['potensi' => $item, 'image' => $image['id']]) }}" method="POST" class="mt-3 space-y-2">
+                                                    @csrf
+                                                    @method('PUT')
+                                                    <label class="block text-xs font-semibold text-gray-600">Ganti Gambar Ini (URL)</label>
+                                                    <input type="url" name="image_url" required placeholder="https://example.com/gambar-baru.jpg" class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-sm">
+                                                    <button type="submit" class="inline-flex items-center bg-amber-500 hover:bg-amber-600 text-white font-semibold px-3 py-2 rounded-lg text-sm transition">
+                                                        Ganti Gambar
+                                                    </button>
+                                                </form>
+
                                                 <form action="{{ route('admin.kelola-potensi.images.destroy', ['potensi' => $item, 'image' => $image['id']]) }}" method="POST" onsubmit="return confirm('Hapus gambar ini?');" class="mt-2">
                                                     @csrf
                                                     @method('DELETE')
@@ -128,8 +133,19 @@
                                         </div>
                                     @endforeach
                                 </div>
-                            </div>
-                        @endif
+                            @else
+                                <p class="text-sm text-gray-500 mb-4">Belum ada gambar untuk potensi ini.</p>
+                            @endif
+
+                            <form action="{{ route('admin.kelola-potensi.images.store', $item) }}" method="POST" class="space-y-2">
+                                @csrf
+                                <label class="block text-sm font-semibold text-gray-700">Tambah Gambar Baru (URL)</label>
+                                <textarea name="image_urls_text" rows="3" placeholder="Satu URL per baris\nhttps://example.com/gambar-1.jpg\nhttps://example.com/gambar-2.jpg" class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white">{{ old('image_urls_text') }}</textarea>
+                                <button type="submit" class="inline-flex items-center bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-lg transition">
+                                    Tambah Gambar
+                                </button>
+                            </form>
+                        </div>
 
                         <form action="{{ route('admin.kelola-potensi.destroy', $item) }}" method="POST" onsubmit="return confirm('Hapus potensi ini?');" class="mt-3">
                             @csrf

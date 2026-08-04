@@ -167,6 +167,10 @@ Route::middleware(['auth'])->group(function () {
         ->name('admin.kelola-potensi.store');
     Route::put('/admin/kelola-potensi-kelurahan/{potensi}', [\App\Http\Controllers\AdminKelolaInformasiController::class, 'updatePotensiKelurahan'])
         ->name('admin.kelola-potensi.update');
+    Route::post('/admin/kelola-potensi-kelurahan/{potensi}/images', [\App\Http\Controllers\AdminKelolaInformasiController::class, 'storePotensiImages'])
+        ->name('admin.kelola-potensi.images.store');
+    Route::put('/admin/kelola-potensi-kelurahan/{potensi}/images/{image}', [\App\Http\Controllers\AdminKelolaInformasiController::class, 'updatePotensiImage'])
+        ->name('admin.kelola-potensi.images.update');
     Route::delete('/admin/kelola-potensi-kelurahan/{potensi}/images/{image}', [\App\Http\Controllers\AdminKelolaInformasiController::class, 'destroyPotensiImage'])
         ->name('admin.kelola-potensi.images.destroy');
     Route::delete('/admin/kelola-potensi-kelurahan/{potensi}', [\App\Http\Controllers\AdminKelolaInformasiController::class, 'destroyPotensiKelurahan'])

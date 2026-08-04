@@ -428,26 +428,23 @@ class AdminKelolaInformasiController extends Controller
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
-            'images.*' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp'],
+            'image_urls_text' => ['nullable', 'string', 'max:10000'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
         ]);
 
         $hasImageColumns = $this->hasPotensiImageColumns();
         $hasImagesTable = $this->hasPotensiImagesTable();
+        $imageUrls = $this->parseImageUrlsText($validated['image_urls_text'] ?? null);
 
-        $imageFiles = collect($request->file('images', []))
-            ->filter(fn ($file) => $file instanceof UploadedFile)
-            ->values();
-
-        if ($imageFiles->isNotEmpty() && ! $hasImageColumns && ! $hasImagesTable) {
+        if ($imageUrls->isNotEmpty() && ! $hasImageColumns && ! $hasImagesTable) {
             return back()->withErrors([
-                'images' => 'Struktur gambar potensi belum tersedia di database. Jalankan migrasi terbaru terlebih dahulu.',
+                'image_urls_text' => 'Struktur gambar potensi belum tersedia di database. Jalankan migrasi terbaru terlebih dahulu.',
             ])->withInput();
         }
 
-        if ($imageFiles->isNotEmpty() && ! $hasImagesTable) {
+        if ($imageUrls->isNotEmpty() && ! $hasImagesTable) {
             return back()->withErrors([
-                'images' => 'Tabel galeri potensi belum tersedia. Jalankan migrasi terbaru terlebih dahulu.',
+                'image_urls_text' => 'Tabel galeri potensi belum tersedia. Jalankan migrasi terbaru terlebih dahulu.',
             ])->withInput();
         }
 
@@ -464,11 +461,11 @@ class AdminKelolaInformasiController extends Controller
 
         $potensi = PotensiKelurahanItem::create($data);
 
-        if ($imageFiles->isNotEmpty()) {
+        if ($imageUrls->isNotEmpty()) {
             $firstStoredImage = null;
 
-            foreach ($imageFiles as $imageFile) {
-                $storedImage = $this->storePotensiImage($potensi, $imageFile);
+            foreach ($imageUrls as $imageUrl) {
+                $storedImage = $this->storePotensiImageFromUrl($potensi, (string) $imageUrl);
 
                 if ($firstStoredImage === null) {
                     $firstStoredImage = $storedImage;
@@ -490,28 +487,8 @@ class AdminKelolaInformasiController extends Controller
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
-            'images.*' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
         ]);
-
-        $hasImageColumns = $this->hasPotensiImageColumns();
-        $hasImagesTable = $this->hasPotensiImagesTable();
-
-        $imageFiles = collect($request->file('images', []))
-            ->filter(fn ($file) => $file instanceof UploadedFile)
-            ->values();
-
-        if ($imageFiles->isNotEmpty() && ! $hasImageColumns && ! $hasImagesTable) {
-            return back()->withErrors([
-                'images' => 'Struktur gambar potensi belum tersedia di database. Jalankan migrasi terbaru terlebih dahulu.',
-            ])->withInput();
-        }
-
-        if ($imageFiles->isNotEmpty() && ! $hasImagesTable) {
-            return back()->withErrors([
-                'images' => 'Tabel galeri potensi belum tersedia. Jalankan migrasi terbaru terlebih dahulu.',
-            ])->withInput();
-        }
 
         $potensi->title = $validated['title'];
         $potensi->description = $validated['description'] ?? null;
@@ -519,23 +496,79 @@ class AdminKelolaInformasiController extends Controller
 
         $potensi->save();
 
-        if ($imageFiles->isNotEmpty()) {
-            foreach ($imageFiles as $imageFile) {
-                $this->storePotensiImage($potensi, $imageFile);
-            }
+        return back()->with('status', 'Potensi kelurahan berhasil diperbarui.');
+    }
 
-            if ($hasImageColumns) {
-                $latestImage = $potensi->images()->latest('id')->first();
+    public function storePotensiImages(Request $request, PotensiKelurahanItem $potensi)
+    {
+        if (! $this->hasPotensiImagesTable()) {
+            return back()->withErrors([
+                'image_urls_text' => 'Tabel galeri potensi belum tersedia. Jalankan migrasi terbaru terlebih dahulu.',
+            ])->withInput();
+        }
 
-                if ($latestImage instanceof PotensiKelurahanImage) {
-                    $potensi->image_path = $latestImage->image_path;
-                    $potensi->image_data = $latestImage->image_data;
-                    $potensi->save();
-                }
+        $request->validate([
+            'image_urls_text' => ['required', 'string', 'max:10000'],
+        ]);
+
+        $imageUrls = $this->parseImageUrlsText($request->input('image_urls_text'));
+
+        if ($imageUrls->isEmpty()) {
+            return back()->withErrors([
+                'image_urls_text' => 'Masukkan minimal satu URL gambar yang valid (http/https).',
+            ])->withInput();
+        }
+
+        foreach ($imageUrls as $imageUrl) {
+            $this->storePotensiImageFromUrl($potensi, (string) $imageUrl);
+        }
+
+        if ($this->hasPotensiImageColumns()) {
+            $latestImage = $potensi->images()->latest('id')->first();
+
+            if ($latestImage instanceof PotensiKelurahanImage) {
+                $potensi->image_path = $latestImage->image_path;
+                $potensi->image_data = $latestImage->image_data;
+                $potensi->save();
             }
         }
 
-        return back()->with('status', 'Potensi kelurahan berhasil diperbarui.');
+        return back()->with('status', 'Gambar potensi berhasil ditambahkan.');
+    }
+
+    public function updatePotensiImage(Request $request, PotensiKelurahanItem $potensi, PotensiKelurahanImage $image)
+    {
+        if (! $this->hasPotensiImagesTable()) {
+            return back()->withErrors([
+                'image_url' => 'Tabel galeri potensi belum tersedia. Jalankan migrasi terbaru terlebih dahulu.',
+            ])->withInput();
+        }
+
+        if ($image->potensi_kelurahan_item_id !== $potensi->id) {
+            abort(404);
+        }
+
+        $request->validate([
+            'image_url' => ['required', 'url', 'max:2048'],
+        ]);
+
+        if (!empty($image->image_path) && ! $this->isExternalUrl($image->image_path)) {
+            Storage::disk($this->mediaDisk())->delete($image->image_path);
+        }
+
+        $image->image_path = $this->normalizeExternalImageUrl(trim((string) $request->input('image_url', '')));
+        $image->image_data = null;
+        $image->save();
+
+        if ($this->hasPotensiImageColumns()) {
+            $latestImage = $potensi->images()->latest('id')->first();
+
+            $potensi->image_path = $latestImage?->image_path;
+            $potensi->image_data = $latestImage?->image_data;
+            $potensi->save();
+        }
+
+        return back()->with('status', 'Gambar potensi berhasil diperbarui.');
     }
 
     public function destroyPotensiImage(PotensiKelurahanItem $potensi, PotensiKelurahanImage $image)
@@ -550,7 +583,7 @@ class AdminKelolaInformasiController extends Controller
             abort(404);
         }
 
-        if (!empty($image->image_path)) {
+        if (!empty($image->image_path) && ! $this->isExternalUrl($image->image_path)) {
             Storage::disk($this->mediaDisk())->delete($image->image_path);
         }
 
@@ -571,13 +604,13 @@ class AdminKelolaInformasiController extends Controller
     {
         if ($this->hasPotensiImagesTable()) {
             foreach ($potensi->images as $image) {
-                if (!empty($image->image_path)) {
+                if (!empty($image->image_path) && ! $this->isExternalUrl($image->image_path)) {
                     Storage::disk($this->mediaDisk())->delete($image->image_path);
                 }
             }
         }
 
-        if ($this->hasPotensiImageColumns() && !empty($potensi->image_path)) {
+        if ($this->hasPotensiImageColumns() && !empty($potensi->image_path) && ! $this->isExternalUrl($potensi->image_path)) {
             Storage::disk($this->mediaDisk())->delete($potensi->image_path);
         }
 
@@ -630,6 +663,31 @@ class AdminKelolaInformasiController extends Controller
         ];
     }
 
+    private function storePotensiImageFromUrl(PotensiKelurahanItem $potensi, string $imageUrl): array
+    {
+        $normalizedUrl = $this->normalizeExternalImageUrl(trim($imageUrl));
+
+        if ($normalizedUrl === '') {
+            return [
+                'image_path' => null,
+                'image_data' => null,
+            ];
+        }
+
+        if ($this->hasPotensiImagesTable()) {
+            PotensiKelurahanImage::create([
+                'potensi_kelurahan_item_id' => $potensi->id,
+                'image_path' => $normalizedUrl,
+                'image_data' => null,
+            ]);
+        }
+
+        return [
+            'image_path' => $normalizedUrl,
+            'image_data' => null,
+        ];
+    }
+
     private function attachPotensiImageSources(Collection $items): Collection
     {
         $disk = Storage::disk($this->mediaDisk());
@@ -655,9 +713,7 @@ class AdminKelolaInformasiController extends Controller
                     $source = $this->resolveImageSource(
                         $disk,
                         $image->image_path,
-                        is_string($image->image_data) && trim($image->image_data) !== ''
-                            ? route('potensi.image', ['image' => $image])
-                            : null
+                        route('potensi.image', ['image' => $image])
                     );
 
                     if ($source === null) {
@@ -676,9 +732,7 @@ class AdminKelolaInformasiController extends Controller
                 $legacySource = $this->resolveImageSource(
                     $disk,
                     $item->image_path,
-                    is_string($item->image_data) && trim($item->image_data) !== ''
-                        ? route('potensi.legacy-image', ['potensi' => $item])
-                        : null
+                    route('potensi.legacy-image', ['potensi' => $item])
                 );
 
                 if ($legacySource !== null) {
@@ -736,7 +790,6 @@ class AdminKelolaInformasiController extends Controller
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
-            'images.*' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp'],
             'image_urls_text' => ['nullable', 'string', 'max:10000'],
         ]);
 
@@ -752,21 +805,15 @@ class AdminKelolaInformasiController extends Controller
 
         $imageUrls = $this->parseImageUrlsText($validated['image_urls_text'] ?? null);
 
-        if ($request->hasFile('images') || $imageUrls->isNotEmpty()) {
+        if ($imageUrls->isNotEmpty()) {
             if (! Schema::hasTable('kelola_informasi_images')) {
                 return back()->withErrors([
-                    'images' => 'Tabel foto informasi belum tersedia. Jalankan migrasi terlebih dahulu.',
+                    'image_urls_text' => 'Tabel foto informasi belum tersedia. Jalankan migrasi terlebih dahulu.',
                 ])->withInput();
             }
 
             foreach ($imageUrls as $imageUrl) {
                 $this->storeInformasiImageFromUrl($informasi, (string) $imageUrl);
-            }
-
-            foreach ($request->file('images') as $imageFile) {
-                if ($imageFile instanceof UploadedFile) {
-                    $this->storeInformasiImage($informasi, $imageFile);
-                }
             }
         }
 
@@ -792,27 +839,24 @@ class AdminKelolaInformasiController extends Controller
     {
         if (! Schema::hasTable('kelola_informasi_images')) {
             return back()->withErrors([
-                'images' => 'Tabel foto informasi belum tersedia. Jalankan migrasi terlebih dahulu.',
+                'image_urls_text' => 'Tabel foto informasi belum tersedia. Jalankan migrasi terlebih dahulu.',
             ])->withInput();
         }
 
         $request->validate([
-            'images.*' => ['required', 'image', 'mimes:jpg,jpeg,png,webp'],
-            'image_urls_text' => ['nullable', 'string', 'max:10000'],
+            'image_urls_text' => ['required', 'string', 'max:10000'],
         ]);
 
         $imageUrls = $this->parseImageUrlsText($request->input('image_urls_text'));
 
-        foreach ($imageUrls as $imageUrl) {
-            $this->storeInformasiImageFromUrl($informasi, (string) $imageUrl);
+        if ($imageUrls->isEmpty()) {
+            return back()->withErrors([
+                'image_urls_text' => 'Masukkan minimal satu URL gambar yang valid (http/https).',
+            ])->withInput();
         }
 
-        if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $imageFile) {
-                if ($imageFile instanceof UploadedFile) {
-                    $this->storeInformasiImage($informasi, $imageFile);
-                }
-            }
+        foreach ($imageUrls as $imageUrl) {
+            $this->storeInformasiImageFromUrl($informasi, (string) $imageUrl);
         }
 
         return back()->with('status', 'Foto informasi berhasil ditambahkan.');
@@ -831,52 +875,19 @@ class AdminKelolaInformasiController extends Controller
         }
 
         $request->validate([
-            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp'],
-            'image_url' => ['nullable', 'url', 'max:2048'],
+            'image_url' => ['required', 'url', 'max:2048'],
         ]);
 
         if (!empty($image->image_path) && ! $this->isExternalUrl($image->image_path)) {
             Storage::disk($this->mediaDisk())->delete($image->image_path);
         }
 
-        $newImage = $request->file('image');
-        $newImageUrl = trim((string) $request->input('image_url', ''));
-
-        if (!($newImage instanceof UploadedFile) && $newImageUrl === '') {
-            return back()->withErrors([
-                'image' => 'Pilih file gambar atau kirim URL gambar terlebih dahulu.',
-            ])->withInput();
-        }
+        $newImageUrl = $this->normalizeExternalImageUrl(trim((string) $request->input('image_url', '')));
 
         $image->image_path = null;
         $image->image_data = null;
 
-        if ($newImageUrl !== '') {
-            $image->image_path = $newImageUrl;
-            $image->save();
-
-            return back()->with('status', 'Foto informasi berhasil diganti.');
-        }
-
-        if ($newImage instanceof UploadedFile) {
-            $storedPath = null;
-
-            try {
-                $storedPath = $newImage->store('kelola_informasi', $this->mediaDisk());
-                if (!is_string($storedPath) || $storedPath === '') {
-                    $storedPath = null;
-                }
-            } catch (Throwable $exception) {
-                $storedPath = null;
-            }
-
-            $image->image_path = $storedPath;
-
-            if ($storedPath === null) {
-                $mimeType = $newImage->getMimeType() ?: 'application/octet-stream';
-                $image->image_data = 'data:'.$mimeType.';base64,'.base64_encode((string) $newImage->get());
-            }
-        }
+        $image->image_path = $newImageUrl;
 
         $image->save();
 
@@ -935,9 +946,7 @@ class AdminKelolaInformasiController extends Controller
                     $source = $this->resolveImageSource(
                         $disk,
                         $image->image_path,
-                        is_string($image->image_data) && trim($image->image_data) !== ''
-                            ? route('informasi.image', ['image' => $image])
-                            : null
+                        route('informasi.image', ['image' => $image])
                     );
 
                     if ($source === null) {
@@ -956,9 +965,7 @@ class AdminKelolaInformasiController extends Controller
                 $legacySource = $this->resolveImageSource(
                     $disk,
                     $item->image_path,
-                    is_string($item->image_data) && trim($item->image_data) !== ''
-                        ? route('informasi.legacy-image', ['informasi' => $item])
-                        : null
+                    route('informasi.legacy-image', ['informasi' => $item])
                 );
 
                 if ($legacySource !== null) {
@@ -1008,7 +1015,7 @@ class AdminKelolaInformasiController extends Controller
 
     private function storeInformasiImageFromUrl(KelolaInformasi $informasi, string $imageUrl): void
     {
-        $trimmedUrl = trim($imageUrl);
+        $trimmedUrl = $this->normalizeExternalImageUrl(trim($imageUrl));
 
         if ($trimmedUrl === '') {
             return;
@@ -1057,7 +1064,14 @@ class AdminKelolaInformasiController extends Controller
         $imagePathValue = is_string($imagePath) ? trim($imagePath) : '';
 
         if ($this->isExternalUrl($imagePathValue)) {
-            return $imagePathValue;
+            $normalizedExternalUrl = $this->normalizeExternalImageUrl($imagePathValue);
+
+            // Google Drive images can be blocked by CORP when loaded directly in <img>.
+            if ($this->extractGoogleDriveFileId($normalizedExternalUrl) !== null && is_string($fallbackUrl) && trim($fallbackUrl) !== '') {
+                return $fallbackUrl;
+            }
+
+            return $normalizedExternalUrl;
         }
 
         if ($imagePathValue !== '') {
@@ -1076,6 +1090,55 @@ class AdminKelolaInformasiController extends Controller
     private function isExternalUrl(?string $value): bool
     {
         return is_string($value) && preg_match('#^https?://#i', trim($value)) === 1;
+    }
+
+    private function normalizeExternalImageUrl(string $url): string
+    {
+        $fileId = $this->extractGoogleDriveFileId($url);
+
+        if ($fileId !== null) {
+            return 'https://drive.google.com/uc?export=view&id='.$fileId;
+        }
+
+        return $url;
+    }
+
+    private function extractGoogleDriveFileId(?string $url): ?string
+    {
+        if (! is_string($url) || trim($url) === '') {
+            return null;
+        }
+
+        $parts = parse_url(trim($url));
+
+        if (! is_array($parts)) {
+            return null;
+        }
+
+        $host = strtolower((string) ($parts['host'] ?? ''));
+        if (! in_array($host, ['drive.google.com', 'www.drive.google.com'], true)) {
+            return null;
+        }
+
+        $path = trim((string) ($parts['path'] ?? ''), '/');
+        $segments = $path === '' ? [] : explode('/', $path);
+
+        if (($segments[0] ?? null) === 'file' && ($segments[1] ?? null) === 'd') {
+            $fileId = trim((string) ($segments[2] ?? ''));
+            if ($fileId !== '') {
+                return $fileId;
+            }
+        }
+
+        $query = [];
+        parse_str((string) ($parts['query'] ?? ''), $query);
+
+        $fileId = isset($query['id']) ? trim((string) $query['id']) : '';
+        if ($fileId !== '') {
+            return $fileId;
+        }
+
+        return null;
     }
 
     private function normalizeVideoUrl(string $url): string
@@ -1121,25 +1184,5 @@ class AdminKelolaInformasiController extends Controller
         return $url;
     }
 
-    private function extractGoogleDriveFileId(?string $url): ?string
-    {
-        if (! is_string($url) || $url === '') {
-            return null;
-        }
-
-        if (preg_match('#^https?://drive\.google\.com/file/d/([^/]+)/#i', $url, $matches) === 1) {
-            return $matches[1];
-        }
-
-        if (preg_match('#^https?://drive\.google\.com/open\?id=([^&]+)#i', $url, $matches) === 1) {
-            return $matches[1];
-        }
-
-        if (preg_match('#^https?://drive\.google\.com/uc\?export=download&id=([A-Za-z0-9_-]+)$#i', $url, $matches) === 1) {
-            return $matches[1];
-        }
-
-        return null;
-    }
 }
 
