@@ -384,6 +384,11 @@ class KelolaInformasiController extends Controller
 
         if ($this->isExternalUrl($imagePathValue)) {
             $externalUrl = $this->normalizeExternalImageUrl($imagePathValue);
+            $driveFileId = $this->extractGoogleDriveFileId($externalUrl);
+
+            if ($driveFileId !== null) {
+                $externalUrl = 'https://drive.google.com/thumbnail?id='.$driveFileId.'&sz=w2000';
+            }
 
             try {
                 $externalResponse = Http::timeout(20)
