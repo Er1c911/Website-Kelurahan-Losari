@@ -327,6 +327,10 @@ class KelolaInformasiController extends Controller
     {
         $imagePathValue = is_string($imagePath) ? trim($imagePath) : '';
 
+        if ($this->isExternalUrl($imagePathValue)) {
+            return $imagePathValue;
+        }
+
         if ($imagePathValue !== '') {
             try {
                 if ($disk->exists($imagePathValue)) {
@@ -338,6 +342,11 @@ class KelolaInformasiController extends Controller
         }
 
         return is_string($fallbackUrl) && trim($fallbackUrl) !== '' ? $fallbackUrl : null;
+    }
+
+    private function isExternalUrl(?string $value): bool
+    {
+        return is_string($value) && preg_match('#^https?://#i', trim($value)) === 1;
     }
 
     private function imageResponse($imagePath, $imageData)

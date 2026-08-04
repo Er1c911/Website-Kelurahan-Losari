@@ -737,6 +737,7 @@ class AdminKelolaInformasiController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'images.*' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp'],
+            'image_urls.*' => ['nullable', 'url', 'max:2048'],
         ]);
 
         $data = [
@@ -749,11 +750,17 @@ class AdminKelolaInformasiController extends Controller
 
         $informasi = KelolaInformasi::create($data);
 
-        if ($request->hasFile('images')) {
+        $imageUrls = collect($validated['image_urls'] ?? [])->filter()->values();
+
+        if ($request->hasFile('images') || $imageUrls->isNotEmpty()) {
             if (! Schema::hasTable('kelola_informasi_images')) {
                 return back()->withErrors([
                     'images' => 'Tabel foto informasi belum tersedia. Jalankan migrasi terlebih dahulu.',
                 ])->withInput();
+            }
+
+            foreach ($imageUrls as $imageUrl) {
+                $this->storeInformasiImageFromUrl($informasi, (string) $imageUrl);
             }
 
             foreach ($request->file('images') as $imageFile) {
@@ -791,7 +798,14 @@ class AdminKelolaInformasiController extends Controller
 
         $request->validate([
             'images.*' => ['required', 'image', 'mimes:jpg,jpeg,png,webp'],
+            'image_urls.*' => ['nullable', 'url', 'max:2048'],
         ]);
+
+        $imageUrls = collect($request->input('image_urls', []))->filter()->values();
+
+        foreach ($imageUrls as $imageUrl) {
+            $this->storeInformasiImageFromUrl($informasi, (string) $imageUrl);
+        }
 
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $imageFile) {
@@ -817,17 +831,32 @@ class AdminKelolaInformasiController extends Controller
         }
 
         $request->validate([
-            'image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp'],
+            'image_url' => ['nullable', 'url', 'max:2048'],
         ]);
 
-        if (!empty($image->image_path)) {
+        if (!empty($image->image_path) && ! $this->isExternalUrl($image->image_path)) {
             Storage::disk($this->mediaDisk())->delete($image->image_path);
         }
 
         $newImage = $request->file('image');
+        $newImageUrl = trim((string) $request->input('image_url', ''));
+
+        if (!($newImage instanceof UploadedFile) && $newImageUrl === '') {
+            return back()->withErrors([
+                'image' => 'Pilih file gambar atau kirim URL gambar terlebih dahulu.',
+            ])->withInput();
+        }
 
         $image->image_path = null;
         $image->image_data = null;
+
+        if ($newImageUrl !== '') {
+            $image->image_path = $newImageUrl;
+            $image->save();
+
+            return back()->with('status', 'Foto informasi berhasil diganti.');
+        }
 
         if ($newImage instanceof UploadedFile) {
             $storedPath = null;
@@ -866,7 +895,7 @@ class AdminKelolaInformasiController extends Controller
             abort(404);
         }
 
-        if (!empty($image->image_path)) {
+        if (!empty($image->image_path) && ! $this->isExternalUrl($image->image_path)) {
             Storage::disk($this->mediaDisk())->delete($image->image_path);
         }
 
@@ -879,13 +908,13 @@ class AdminKelolaInformasiController extends Controller
     {
         if (Schema::hasTable('kelola_informasi_images')) {
             foreach ($informasi->images as $image) {
-                if (!empty($image->image_path)) {
+                if (!empty($image->image_path) && ! $this->isExternalUrl($image->image_path)) {
                     Storage::disk($this->mediaDisk())->delete($image->image_path);
                 }
             }
         }
 
-        if (!empty($informasi->image_path)) {
+        if (!empty($informasi->image_path) && ! $this->isExternalUrl($informasi->image_path)) {
             Storage::disk($this->mediaDisk())->delete($informasi->image_path);
         }
 
@@ -977,6 +1006,21 @@ class AdminKelolaInformasiController extends Controller
         ]);
     }
 
+    private function storeInformasiImageFromUrl(KelolaInformasi $informasi, string $imageUrl): void
+    {
+        $trimmedUrl = trim($imageUrl);
+
+        if ($trimmedUrl === '') {
+            return;
+        }
+
+        KelolaInformasiImage::create([
+            'kelola_informasi_id' => $informasi->id,
+            'image_path' => $trimmedUrl,
+            'image_data' => null,
+        ]);
+    }
+
     private function getBerandaVideoPath(): ?string
     {
         foreach (['mp4', 'webm', 'ogg', 'mov'] as $extension) {
@@ -999,6 +1043,10 @@ class AdminKelolaInformasiController extends Controller
     {
         $imagePathValue = is_string($imagePath) ? trim($imagePath) : '';
 
+        if ($this->isExternalUrl($imagePathValue)) {
+            return $imagePathValue;
+        }
+
         if ($imagePathValue !== '') {
             try {
                 if ($disk->exists($imagePathValue)) {
@@ -1010,6 +1058,11 @@ class AdminKelolaInformasiController extends Controller
         }
 
         return is_string($fallbackUrl) && trim($fallbackUrl) !== '' ? $fallbackUrl : null;
+    }
+
+    private function isExternalUrl(?string $value): bool
+    {
+        return is_string($value) && preg_match('#^https?://#i', trim($value)) === 1;
     }
 
     private function normalizeVideoUrl(string $url): string
