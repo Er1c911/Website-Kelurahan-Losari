@@ -41,6 +41,16 @@ class KelolaInformasiController extends Controller
         ]);
     }
 
+    public function informasiImage(KelolaInformasiImage $image)
+    {
+        return $this->imageResponse($image->image_path, $image->image_data);
+    }
+
+    public function informasiLegacyImage(KelolaInformasi $informasi)
+    {
+        return $this->imageResponse($informasi->image_path, $informasi->image_data);
+    }
+
     public function umkm()
     {
         $umkms = collect();
@@ -68,6 +78,16 @@ class KelolaInformasiController extends Controller
         return view('potensi_kelurahan', [
             'items' => $items,
         ]);
+    }
+
+    public function potensiImage(PotensiKelurahanImage $image)
+    {
+        return $this->imageResponse($image->image_path, $image->image_data);
+    }
+
+    public function potensiLegacyImage(PotensiKelurahanItem $potensi)
+    {
+        return $this->imageResponse($potensi->image_path, $potensi->image_data);
     }
 
     public function kontak()
@@ -118,13 +138,25 @@ class KelolaInformasiController extends Controller
         return $sections->map(function (KelolaInformasi $section) use ($disk, $imagesBySectionId) {
             $resolvedImages = collect($imagesBySectionId->get($section->id, []))
                 ->map(function (KelolaInformasiImage $image) use ($disk) {
-                    return $this->resolveImageSource($disk, $image->image_path, $image->image_data);
+                    return $this->resolveImageSource(
+                        $disk,
+                        $image->image_path,
+                        is_string($image->image_data) && trim($image->image_data) !== ''
+                            ? route('informasi.image', ['image' => $image])
+                            : null
+                    );
                 })
                 ->filter()
                 ->values();
 
             if ($resolvedImages->isEmpty()) {
-                $legacySource = $this->resolveImageSource($disk, $section->image_path, $section->image_data);
+                $legacySource = $this->resolveImageSource(
+                    $disk,
+                    $section->image_path,
+                    is_string($section->image_data) && trim($section->image_data) !== ''
+                        ? route('informasi.legacy-image', ['informasi' => $section])
+                        : null
+                );
 
                 if ($legacySource !== null) {
                     $resolvedImages->push($legacySource);
@@ -159,13 +191,25 @@ class KelolaInformasiController extends Controller
         return $items->map(function (PotensiKelurahanItem $item) use ($disk, $imagesByPotensiId) {
             $resolvedImages = collect($imagesByPotensiId->get($item->id, []))
                 ->map(function (PotensiKelurahanImage $image) use ($disk) {
-                    return $this->resolveImageSource($disk, $image->image_path, $image->image_data);
+                    return $this->resolveImageSource(
+                        $disk,
+                        $image->image_path,
+                        is_string($image->image_data) && trim($image->image_data) !== ''
+                            ? route('potensi.image', ['image' => $image])
+                            : null
+                    );
                 })
                 ->filter()
                 ->values();
 
             if ($resolvedImages->isEmpty()) {
-                $legacySource = $this->resolveImageSource($disk, $item->image_path, $item->image_data);
+                $legacySource = $this->resolveImageSource(
+                    $disk,
+                    $item->image_path,
+                    is_string($item->image_data) && trim($item->image_data) !== ''
+                        ? route('potensi.legacy-image', ['potensi' => $item])
+                        : null
+                );
 
                 if ($legacySource !== null) {
                     $resolvedImages->push($legacySource);
@@ -279,9 +323,8 @@ class KelolaInformasiController extends Controller
         return $trimmed === '' ? $fallback : $trimmed;
     }
 
-    private function resolveImageSource($disk, $imagePath, $imageData): ?string
+    private function resolveImageSource($disk, $imagePath, ?string $fallbackUrl = null): ?string
     {
-        $imageDataValue = is_string($imageData) ? trim($imageData) : '';
         $imagePathValue = is_string($imagePath) ? trim($imagePath) : '';
 
         if ($imagePathValue !== '') {
@@ -294,7 +337,40 @@ class KelolaInformasiController extends Controller
             }
         }
 
-        return $imageDataValue !== '' ? $imageDataValue : null;
+        return is_string($fallbackUrl) && trim($fallbackUrl) !== '' ? $fallbackUrl : null;
+    }
+
+    private function imageResponse($imagePath, $imageData)
+    {
+        $disk = Storage::disk($this->mediaDisk());
+        $imagePathValue = is_string($imagePath) ? trim($imagePath) : '';
+
+        if ($imagePathValue !== '') {
+            try {
+                if ($disk->exists($imagePathValue)) {
+                    return $disk->response($imagePathValue);
+                }
+            } catch (\Throwable $exception) {
+                // Continue to image_data fallback.
+            }
+        }
+
+        $imageDataValue = is_string($imageData) ? trim($imageData) : '';
+
+        if ($imageDataValue === '' || preg_match('/^data:([^;]+);base64,(.+)$/', $imageDataValue, $matches) !== 1) {
+            abort(404);
+        }
+
+        $binary = base64_decode($matches[2], true);
+
+        if ($binary === false) {
+            abort(404);
+        }
+
+        return response($binary, 200, [
+            'Content-Type' => $matches[1],
+            'Cache-Control' => 'public, max-age=86400',
+        ]);
     }
 
 }

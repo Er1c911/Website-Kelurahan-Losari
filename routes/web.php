@@ -42,9 +42,17 @@ Route::get('/media/{path}', function (string $path) {
 Route::get('/', [\App\Http\Controllers\KelolaInformasiController::class, 'index'])->name('home');
 Route::get('/informasi-desa', [\App\Http\Controllers\KelolaInformasiController::class, 'informasiDesa'])
     ->name('informasi-desa');
+Route::get('/informasi-desa/images/{image}', [\App\Http\Controllers\KelolaInformasiController::class, 'informasiImage'])
+    ->name('informasi.image');
+Route::get('/informasi-desa/legacy-images/{informasi}', [\App\Http\Controllers\KelolaInformasiController::class, 'informasiLegacyImage'])
+    ->name('informasi.legacy-image');
 Route::get('/umkm', [\App\Http\Controllers\KelolaInformasiController::class, 'umkm'])->name('umkm');
 Route::get('/potensi-kelurahan', [\App\Http\Controllers\KelolaInformasiController::class, 'potensiKelurahan'])
     ->name('potensi-kelurahan');
+Route::get('/potensi-kelurahan/images/{image}', [\App\Http\Controllers\KelolaInformasiController::class, 'potensiImage'])
+    ->name('potensi.image');
+Route::get('/potensi-kelurahan/legacy-images/{potensi}', [\App\Http\Controllers\KelolaInformasiController::class, 'potensiLegacyImage'])
+    ->name('potensi.legacy-image');
 Route::view('/kalender-desa', 'kalender_desa')->name('kalender-desa');
 Route::get('/kontak', [\App\Http\Controllers\KelolaInformasiController::class, 'kontak'])->name('kontak');
 Route::get('/kalender-desa/data', function (\Illuminate\Http\Request $request) {
